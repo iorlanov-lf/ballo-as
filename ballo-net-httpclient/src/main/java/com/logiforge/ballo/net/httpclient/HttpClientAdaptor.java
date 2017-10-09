@@ -13,6 +13,7 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
+import org.apache.http.protocol.HttpContext;
 
 import com.logiforge.ballo.net.*;
 
@@ -30,29 +31,34 @@ import java.util.Map;
 
 public class HttpClientAdaptor implements HttpAdaptor {
     HttpClient client;
+    HttpContext httpContext;
 
     public HttpClientAdaptor(HttpClient client) {
         this.client = client;
 
     }
 
+    public void setHttpContext(HttpContext httpContext) {
+        this.httpContext = httpContext;
+    }
+
     @Override
     public Response execute(PostRequest postRequest) throws IOException {
 
-        HttpPost httpPost = new HttpPost(postRequest.url);
+        HttpPost httpPost = new HttpPost(postRequest.getUrl());
 
-        if(postRequest.binaryParts != null && postRequest.binaryParts.size() > 0) {
+        if(postRequest.getBinaryParts() != null) {
             Charset chars = Charset.forName("UTF-8");
             MultipartEntity multiPartEntity = new MultipartEntity();
 
-            if(postRequest.stringParts != null && postRequest.stringParts.size() > 0) {
-                for(Map.Entry<String, String> entry : postRequest.stringParts.entrySet()) {
+            if(postRequest.getStringParts() != null) {
+                for(Map.Entry<String, String> entry : postRequest.getStringParts().entrySet()) {
                     multiPartEntity.addPart(entry.getKey(), new StringBody(entry.getValue(), chars));
                 }
             }
 
             // binary fields
-            for(Map.Entry<String, byte[]> entry : postRequest.binaryParts.entrySet()) {
+            for(Map.Entry<String, byte[]> entry : postRequest.getBinaryParts().entrySet()) {
                 multiPartEntity.addPart(entry.getKey(), new ByteArrayBody(entry.getValue(), entry.getKey()));
             }
 
@@ -61,8 +67,10 @@ public class HttpClientAdaptor implements HttpAdaptor {
 
         } else {
             List<NameValuePair> params = new ArrayList<>();
-            for(Map.Entry<String, String> entry : postRequest.stringParts.entrySet()) {
-                params.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
+            if(postRequest.getStringParts() != null) {
+                for (Map.Entry<String, String> entry : postRequest.getStringParts().entrySet()) {
+                    params.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
+                }
             }
             httpPost.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
         }
@@ -72,9 +80,13 @@ public class HttpClientAdaptor implements HttpAdaptor {
         String contentType = null;
 
         IOException lastEx = null;
-        for(int i = 0; i<postRequest.attempts; i++) {
+        for(int i = 0; i<postRequest.getAttempts(); i++) {
             try {
-                httpResponse = client.execute(httpPost);
+                if(httpContext != null) {
+                    httpResponse = client.execute(httpPost, httpContext);
+                } else {
+                    httpResponse = client.execute(httpPost);
+                }
                 contentType = httpResponse.getEntity().getContentType().getValue();
                 lastEx = null;
                 break;
@@ -99,12 +111,12 @@ public class HttpClientAdaptor implements HttpAdaptor {
         }
 
         // process response
-        Response response = new Response();
+        Response response = null;
 
         if(contentType.equals("application/json; charset=UTF-8")) {
-            response.stringResponse = new BasicResponseHandler().handleResponse(httpResponse);
+            response = new Response(new BasicResponseHandler().handleResponse(httpResponse));
         } else if(contentType.equals("application/octet-stream")) {
-            response.binaryResponse = httpResponse.getEntity().getContent();
+            response = new Response(httpResponse.getEntity().getContent());
         } else {
             httpResponse.getEntity().consumeContent();
             throw new IOException("Unknown content type: " + contentType);
