@@ -30,6 +30,5 @@ dependencies {
     compile 'com.google.android.gms:play-services-gcm:10.2.1'
 
     testCompile 'junit:junit:4.12'
-    compile project(':ballo-net')
     compile files('libs/gson-2.4.jar')
 }

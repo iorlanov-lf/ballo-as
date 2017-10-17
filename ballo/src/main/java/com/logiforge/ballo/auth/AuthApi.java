@@ -10,7 +10,7 @@ import com.logiforge.ballo.BalloPersistentState;
 import com.logiforge.ballo.api.Api;
 import com.logiforge.ballo.api.ApiCallBack;
 import com.logiforge.ballo.api.ApiObjectFactory;
-import com.logiforge.ballo.auth.model.UserAuthResult;
+import com.logiforge.ballo.auth.model.api.UserAuthResult;
 import com.logiforge.ballo.model.api.LogContext;
 import com.logiforge.ballo.model.db.SyncLog;
 import com.logiforge.ballo.net.HttpAdaptor;

@@ -1,4 +1,4 @@
-package com.logiforge.ballo.auth.model;
+package com.logiforge.ballo.auth.model.api;
 
 public enum UserAuthOutcome {
 	Success(0, "SUCCESS"),

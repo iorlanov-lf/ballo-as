@@ -1,1 +1,1 @@
-include ':app', ':ballo', ':ballo-net-okhttp', ':ballo-net-httpclient', ':ballo-net'
+include ':app', ':ballo', ':ballo-net-httpclient', ':ballo-net-okhttp'

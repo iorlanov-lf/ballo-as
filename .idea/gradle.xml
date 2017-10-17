@@ -10,7 +10,6 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/ballo" />
-            <option value="$PROJECT_DIR$/ballo-net" />
             <option value="$PROJECT_DIR$/ballo-net-httpclient" />
             <option value="$PROJECT_DIR$/ballo-net-okhttp" />
           </set>

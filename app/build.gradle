@@ -32,8 +32,8 @@ dependencies {
     compile project(':ballo')
     compile project(':ballo-net-httpclient')
     compile project(':ballo-net-okhttp')
-    compile files('libs/httpmime-4.2.1.jar')
-    compile files('libs/org.apache.http.legacy.jar')
-    compile files('libs/okhttp-3.8.1.jar')
-    compile files('libs/okio-1.13.0.jar')
+    //compile files('libs/httpmime-4.2.1.jar')
+    //compile files('libs/org.apache.http.legacy.jar')
+    //compile files('libs/okhttp-3.8.1.jar')
+    //compile files('libs/okio-1.13.0.jar')
 }

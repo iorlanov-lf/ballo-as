@@ -1,4 +1,4 @@
-package com.logiforge.ballo.auth.model;
+package com.logiforge.ballo.auth.model.api;
 
 public class SimpleResponse {
 	public static final int ERR_NO_ERROR = 0;

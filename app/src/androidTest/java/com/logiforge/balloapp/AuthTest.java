@@ -9,9 +9,8 @@ import com.google.gson.GsonBuilder;
 import com.logiforge.ballo.api.ApiObjectFactory;
 import com.logiforge.ballo.auth.AuthApi;
 import com.logiforge.ballo.auth.AuthParams;
-import com.logiforge.ballo.auth.model.SimpleResponse;
-import com.logiforge.ballo.auth.model.UserAuthOutcome;
-import com.logiforge.ballo.auth.model.UserAuthResult;
+import com.logiforge.ballo.auth.model.api.SimpleResponse;
+import com.logiforge.ballo.auth.model.api.UserAuthResult;
 import com.logiforge.ballo.model.api.LogContext;
 import com.logiforge.ballo.net.HttpAdaptor;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
@@ -19,13 +18,8 @@ import com.logiforge.ballo.net.PostRequest;
 import com.logiforge.ballo.net.Response;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.Hashtable;
 
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertArrayEquals;
@@ -43,8 +37,8 @@ public class AuthTest {
     private static final String PAR_PASSWORD = "password";
 
 
-    //private static final String AUTH_URL = "http://10.0.0.21:8080/auth";
-    private static final String AUTH_URL = "https://ballo-test.appspot.com/auth";
+    private static final String AUTH_URL = "http://10.0.0.21:8080/auth";
+    //private static final String AUTH_URL = "https://ballo-test.appspot.com/auth";
 
     private static final String HTTP_ADAPTER_CLASS_NAME = "com.logiforge.ballo.net.okhttp.OkHttpAdaptorBuilder";
 
