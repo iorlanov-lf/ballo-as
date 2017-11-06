@@ -1,6 +1,6 @@
 package com.logiforge.ballo.model.db;
 
-public class SyncLog {
+public class BalloLog {
 	public static final String LVL_FATAL = "F";
 	public static final String LVL_ERROR = "E";
 	public static final String LVL_WARNING = "W";
@@ -15,7 +15,7 @@ public class SyncLog {
 	public String tag;
 	public String message;
 
-	public SyncLog(Long date, String level, String job, String tag, String message) {
+	public BalloLog(Long date, String level, String job, String tag, String message) {
 		this.date = date;
 		this.level = level;
 		this.job = job;
@@ -23,7 +23,7 @@ public class SyncLog {
 		this.message = message;
 	}
 	
-	public SyncLog(Long id, Long date, String level, String job, String tag, String message) {
+	public BalloLog(Long id, Long date, String level, String job, String tag, String message) {
 		this.id = id;
 		this.date = date;
 		this.level = level;

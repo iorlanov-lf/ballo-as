@@ -1,26 +1,36 @@
 package com.logiforge.balloapp;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.test.InstrumentationRegistry;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.logiforge.ballo.Ballo;
 import com.logiforge.ballo.api.ApiObjectFactory;
-import com.logiforge.ballo.auth.AuthApi;
+import com.logiforge.ballo.auth.model.api.RegistrationOperationResult;
 import com.logiforge.ballo.auth.AuthParams;
+import com.logiforge.ballo.auth.dao.AppIdentityDao;
+import com.logiforge.ballo.auth.facade.AuthFacade;
+import com.logiforge.ballo.auth.facade.DefaultAuthFacade;
 import com.logiforge.ballo.auth.model.api.SimpleResponse;
 import com.logiforge.ballo.auth.model.api.UserAuthResult;
-import com.logiforge.ballo.model.api.LogContext;
+import com.logiforge.ballo.auth.model.db.AppIdentity;
+import com.logiforge.ballo.dao.DaoContext;
+import com.logiforge.ballo.dao.sqlite.SqliteDaoContext;
 import com.logiforge.ballo.net.HttpAdaptor;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
 import com.logiforge.ballo.net.PostRequest;
 import com.logiforge.ballo.net.Response;
+import com.logiforge.ballo.net.okhttp.OkHttpAdaptorBuilder;
 
+import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
 
+import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -36,19 +46,77 @@ public class AuthTest {
     private static final String PAR_USER_NAME = "userName";
     private static final String PAR_PASSWORD = "password";
 
-
     private static final String AUTH_URL = "http://10.0.0.21:8080/auth";
     //private static final String AUTH_URL = "https://ballo-test.appspot.com/auth";
 
+    private static final String GCM_SENDER_ID = "662722394825";
+
     private static final String HTTP_ADAPTER_CLASS_NAME = "com.logiforge.ballo.net.okhttp.OkHttpAdaptorBuilder";
 
+    private static Context appContext;
+    private static HttpAdaptor httpAdaptorWithCookies;
 
-    private HttpAdaptor httpAdaptor;
-    private HttpAdaptor httpAdaptorWithCookies;
+    @BeforeClass
+    public static void classStartUp() {
+        try {
+            appContext = InstrumentationRegistry.getTargetContext();
+            Assert.assertNotNull(appContext);
+            assertEquals("com.logiforge.balloapp", appContext.getPackageName());
 
-    public AuthTest() throws Exception{
-        httpAdaptor = createAdaptor(HTTP_ADAPTER_CLASS_NAME, false);
-        httpAdaptorWithCookies = createAdaptor(HTTP_ADAPTER_CLASS_NAME, true);
+            BalloAppSQLiteOpenHelper balloAppSQLiteOpenHelper = new BalloAppSQLiteOpenHelper(appContext);
+            SQLiteDatabase sqliteDb = balloAppSQLiteOpenHelper.getWritableDatabase();
+            DaoContext daoContext = new SqliteDaoContext(sqliteDb);
+
+            ApiObjectFactory apiObjFactory = new ApiObjectFactory() {
+                @Override
+                public HttpAdaptor getHttpAdapter() {
+                    HttpAdaptorBuilder httpAdaptorBuilder = new OkHttpAdaptorBuilder();
+                    return httpAdaptorBuilder.build();
+                }
+
+                @Override
+                public Gson getGson() {
+                    return new GsonBuilder().create();
+                }
+            };
+
+            AuthParams authParams = new AuthParams() {
+                @Override
+                public String getAuthUrl(String op) {
+                    return AUTH_URL;
+                }
+
+                @Override
+                public String getGcmSenderId() {
+                    return GCM_SENDER_ID;
+                }
+            };
+
+            AuthFacade authFacade = new DefaultAuthFacade(authParams, apiObjFactory);
+            Ballo.init(daoContext, authFacade);
+
+            AppIdentityDao appIdentityDao = daoContext.getDao(AppIdentityDao.class);
+            AppIdentity appIdentity = appIdentityDao.getAppIdentity();
+            Assert.assertNotNull(appIdentity);
+            Assert.assertNotNull(appIdentity.getAppId());
+
+            String appId = Ballo.authFacade().getAppId();
+            Assert.assertNotNull(appId);
+
+            httpAdaptorWithCookies = createAdaptor(HTTP_ADAPTER_CLASS_NAME, true);
+        } catch(Exception ex) {
+            fail(ex.getMessage());
+        }
+    }
+
+    private static HttpAdaptor createAdaptor(String adaptorBuilderClassName, boolean useCookies) throws Exception {
+        Class<?> adaptorClass = Class.forName(adaptorBuilderClassName);
+        Constructor<?> ctor = adaptorClass.getConstructor();
+        HttpAdaptorBuilder adaptorBuilder =  (HttpAdaptorBuilder)ctor.newInstance();
+        if(useCookies) {
+            adaptorBuilder.useCookies();
+        }
+        return adaptorBuilder.build();
     }
 
     @Test
@@ -79,56 +147,26 @@ public class AuthTest {
     public void registerUserAndApp() throws Exception {
         deleteUser("iorlanov");
 
-        AuthApi authApi = getAuthApi();
-        AuthApi.AuthApiTaskResult authApiTaskResult =
-                authApi.registerUser("iorlanov", "iorlanov@comcast.net", "Igor Orlanov", "1111111i", "device1", "app1");
+        RegistrationOperationResult result = Ballo.authFacade().registerUser(appContext, null, "iorlanov", "iorlanov@comcast.net", "Igor Orlanov", "1111111i");
 
-        assertTrue(authApiTaskResult.authResult.success);
+        assertNotNull(result);
+        assertNotNull(result.authResult);
+        assertTrue(result.authResult.success);
     }
 
     @Test
     public void registerApp() throws Exception {
         deleteUser("iorlanov");
 
-        AuthApi authApi = getAuthApi();
-        AuthApi.AuthApiTaskResult authApiTaskResult =
-                authApi.registerUser("iorlanov", "iorlanov@comcast.net", "Igor Orlanov", "1111111i", "device1", "app1");
-        assertTrue(authApiTaskResult.authResult.success);
+        RegistrationOperationResult result = Ballo.authFacade().registerUser(appContext, null, "iorlanov", "iorlanov@comcast.net", "Igor Orlanov", "1111111i");
+        assertNotNull(result);
+        assertNotNull(result.authResult);
+        assertTrue(result.authResult.success);
 
-        authApiTaskResult =
-                authApi.registerApp("iorlanov", "1111111i", "device2", "app2");
-        assertTrue(authApiTaskResult.authResult.success);
-    }
-
-    @NonNull
-    private AuthApi getAuthApi() {
-        Context appContext = InstrumentationRegistry.getTargetContext();
-        LogContext logContext = new LogContext("test", "registerUserAndApp");
-        ApiObjectFactory apiObjFactory = new ApiObjectFactory() {
-            @Override
-            public HttpAdaptor getHttpAdapter() {
-                return httpAdaptor;
-            }
-
-            @Override
-            public Gson getGson() {
-                return new GsonBuilder().create();
-            }
-        };
-
-        AuthParams authParams = new AuthParams() {
-            @Override
-            public String getAuthUrl(String op) {
-                return AUTH_URL;
-            }
-
-            @Override
-            public String getGmsSenderId() {
-                return "1234";
-            }
-        };
-
-        return new AuthApi(appContext, logContext, apiObjFactory, authParams, false, null);
+        result = Ballo.authFacade().registerApp(appContext, null, "iorlanov", "1111111i");
+        assertNotNull(result);
+        assertNotNull(result.authResult);
+        assertTrue(result.authResult.success);
     }
 
     private Response signInAsSuperUser() throws java.io.IOException {
@@ -152,13 +190,5 @@ public class AuthTest {
         return httpAdaptorWithCookies.execute(postRequest);
     }
 
-    private HttpAdaptor createAdaptor(String adaptorBuilderClassName, boolean useCookies) throws Exception {
-        Class<?> adaptorClass = Class.forName(adaptorBuilderClassName);
-        Constructor<?> ctor = adaptorClass.getConstructor();
-        HttpAdaptorBuilder adaptorBuilder =  (HttpAdaptorBuilder)ctor.newInstance();
-        if(useCookies) {
-            adaptorBuilder.useCookies();
-        }
-        return adaptorBuilder.build();
-    }
+
 }

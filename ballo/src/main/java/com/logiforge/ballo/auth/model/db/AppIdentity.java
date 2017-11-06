@@ -6,16 +6,14 @@ public class AppIdentity implements Serializable {
 	static final long serialVersionUID = 42L;
 
 	private String appId;
-	private String deviceId;
     private String userName;
 	private String email;
 	private String displayName;
 	private String accessToken;
 	private String refreshToken;
 
-	public AppIdentity(String appId, String deviceId, String userName, String email, String displayName, String accessToken, String refreshToken) {
+	public AppIdentity(String appId, String userName, String email, String displayName, String accessToken, String refreshToken) {
 		this.appId = appId;
-		this.deviceId = deviceId;
 		this.userName = userName;
 		this.email = email;
 		this.displayName = displayName;
@@ -28,12 +26,6 @@ public class AppIdentity implements Serializable {
 	}
 	public void setAppId(String appId) {
 		this.appId = appId;
-	}
-	public String getDeviceId() {
-		return deviceId;
-	}
-	public void setDeviceId(String deviceId) {
-		this.deviceId = deviceId;
 	}
 	public String getUserName() {
 		return userName;
