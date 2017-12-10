@@ -9,20 +9,20 @@ import java.lang.reflect.Type;
 public class JsonWebCall<T> {
 	static final String TAG = "JsonWebCall";
 	
-	private HttpAdaptor httpClient;
+	private HttpAdapter httpClient;
 	JsonResponseParser<T> responceParser;
 	
-	public JsonWebCall(HttpAdaptor httpClient, JsonResponseParser<T> responceParser) {
+	public JsonWebCall(HttpAdapter httpClient, JsonResponseParser<T> responceParser) {
 		this.httpClient = httpClient;
 		this.responceParser = responceParser;
 	}
 	
-	public JsonWebCall(HttpAdaptor httpClient, Gson gson, Class<T> classOfT) {
+	public JsonWebCall(HttpAdapter httpClient, Gson gson, Class<T> classOfT) {
 		this.httpClient = httpClient;
 		this.responceParser = new DefaultJsonResponseParser<T>(classOfT, gson);
 	}
 	
-	public JsonWebCall(HttpAdaptor httpClient, Gson gson, Type type) {
+	public JsonWebCall(HttpAdapter httpClient, Gson gson, Type type) {
 		this.httpClient = httpClient;
 		this.responceParser = new DefaultJsonResponseParser<T>(type, gson);
 	}

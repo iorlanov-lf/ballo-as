@@ -2,7 +2,7 @@ package com.logiforge.ballo.net.httpclient;
 
 import android.net.http.AndroidHttpClient;
 
-import com.logiforge.ballo.net.HttpAdaptor;
+import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
 
 import org.apache.http.client.CookieStore;
@@ -69,14 +69,14 @@ public class HttpClientAdaptorBuilder implements HttpAdaptorBuilder {
     }
 
     @Override
-    public HttpAdaptor build() {
+    public HttpAdapter build() {
 
         HttpClient httpClient = AndroidHttpClient.newInstance(instanceName);
         httpClient.getParams().setBooleanParameter(PNAME_CONNECTION_STALECHECK, httpConnectionStalecheck);
         httpClient.getParams().setIntParameter(PNAME_CONNECTION_TIMEOUT, httpConnectionTimeout);
         httpClient.getParams().setIntParameter(PNAME_SOCKET_TIMEOUT, httpSocketTimeout);
 
-        HttpClientAdaptor httpClientAdaptor = new HttpClientAdaptor(httpClient);
+        HttpClientAdapter httpClientAdaptor = new HttpClientAdapter(httpClient);
         if(useCookies) {
             CookieStore cookieStore = new BasicCookieStore();
             HttpContext httpContext = new BasicHttpContext();

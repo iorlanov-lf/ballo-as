@@ -18,4 +18,8 @@ public interface AuthFacade {
 
     RegistrationOperationResult registerAppWithFacebook(Context context, ApiCallBack callBack, String facebookId, String facebookEmail, String facebookDisplayName, String facebookAT) throws Exception;
     RegistrationOperationResult registerAppWithGoogle(Context context, ApiCallBack callBack, String googleId, String googleEmail, String googleDisplayName, String googleAT) throws Exception;
+
+    void registerEventHandler(AuthEventHandler authEventHandler);
+
+    boolean isCloudRegistered();
 }

@@ -16,7 +16,7 @@ public class SqliteDao {
      protected SQLiteDatabase db = null;
 
      public SqliteDao() {
-          db = ((SqliteDaoContext) Ballo.daoContext()).getDb();
+          db = ((SqliteDbAdapter) Ballo.db()).getDb();
      }
 
      protected SqliteDao(SQLiteDatabase db) {

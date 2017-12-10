@@ -10,5 +10,5 @@ public interface HttpAdaptorBuilder {
     HttpAdaptorBuilder parameter(String name, long value);
     HttpAdaptorBuilder parameter(String name, boolean value);
     HttpAdaptorBuilder useCookies();
-    HttpAdaptor build();
+    HttpAdapter build();
 }

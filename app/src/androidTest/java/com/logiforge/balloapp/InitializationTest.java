@@ -13,11 +13,14 @@ import com.logiforge.ballo.auth.dao.AppIdentityDao;
 import com.logiforge.ballo.auth.facade.AuthFacade;
 import com.logiforge.ballo.auth.facade.DefaultAuthFacade;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
-import com.logiforge.ballo.dao.DaoContext;
-import com.logiforge.ballo.dao.sqlite.SqliteDaoContext;
-import com.logiforge.ballo.net.HttpAdaptor;
+import com.logiforge.ballo.dao.DbAdapter;
+import com.logiforge.ballo.dao.sqlite.SqliteDbAdapter;
+import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
 import com.logiforge.ballo.net.okhttp.OkHttpAdaptorBuilder;
+import com.logiforge.ballo.sync.protocol.DefaultSyncProtocol;
+import com.logiforge.ballo.sync.protocol.SyncProtocol;
+import com.logiforge.balloapp.model.db.Facility;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,13 +52,15 @@ public class InitializationTest {
         assertEquals("com.logiforge.balloapp", appContext.getPackageName());
 
         try {
+            // d/b adapter
             BalloAppSQLiteOpenHelper balloAppSQLiteOpenHelper = new BalloAppSQLiteOpenHelper(appContext);
             SQLiteDatabase sqliteDb = balloAppSQLiteOpenHelper.getWritableDatabase();
-            DaoContext daoContext = new SqliteDaoContext(sqliteDb);
+            DbAdapter dbAdapter = new SqliteDbAdapter(sqliteDb);
 
+            // authentication facade
             ApiObjectFactory apiObjFactory = new ApiObjectFactory() {
                 @Override
-                public HttpAdaptor getHttpAdapter() {
+                public HttpAdapter getHttpAdapter() {
                     HttpAdaptorBuilder httpAdaptorBuilder = new OkHttpAdaptorBuilder();
                     return httpAdaptorBuilder.build();
                 }
@@ -79,9 +84,20 @@ public class InitializationTest {
             };
 
             AuthFacade authFacade = new DefaultAuthFacade(authParams, apiObjFactory);
-            Ballo.init(daoContext, authFacade);
 
-            AppIdentityDao appIdentityDao = daoContext.getDao(AppIdentityDao.class);
+            // sync protocol
+            SyncProtocol syncProtocol = new DefaultSyncProtocol() {
+
+                @Override
+                public void init() {
+                    //this.syncEntityConverters.put(Facility.class.getName())
+                }
+            };
+
+            // Ballo initialization
+            Ballo.init(dbAdapter, authFacade, syncProtocol);
+
+            AppIdentityDao appIdentityDao = dbAdapter.getDao(AppIdentityDao.class);
             AppIdentity appIdentity = appIdentityDao.getAppIdentity();
             assertNotNull(appIdentity);
             assertNotNull(appIdentity.getAppId());

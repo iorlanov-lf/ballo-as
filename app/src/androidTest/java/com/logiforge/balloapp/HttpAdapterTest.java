@@ -3,7 +3,7 @@ package com.logiforge.balloapp;
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
 
-import com.logiforge.ballo.net.HttpAdaptor;
+import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
 import com.logiforge.ballo.net.PostRequest;
 import com.logiforge.ballo.net.Response;
@@ -23,7 +23,7 @@ import static org.junit.Assert.assertEquals;
  * Created by iorlanov on 8/18/17.
  */
 @RunWith(Parameterized.class)
-public class HttpAdaptorTest {
+public class HttpAdapterTest {
     private static final String REQ_PAR_OP = "op";
     private static final String REQ_PAR_VALUE = "value";
     private static final String REQ_PAR_BIN_VALUE = "bin_value";
@@ -46,12 +46,12 @@ public class HttpAdaptorTest {
         });
     }
 
-    private HttpAdaptor httpAdaptor;
-    private HttpAdaptor httpAdaptorWithCookies;
+    private HttpAdapter httpAdapter;
+    private HttpAdapter httpAdapterWithCookies;
 
-    public HttpAdaptorTest(String adaptorClassName) throws Exception{
-        httpAdaptor = createAdaptor(adaptorClassName, false);
-        httpAdaptorWithCookies = createAdaptor(adaptorClassName, true);
+    public HttpAdapterTest(String adaptorClassName) throws Exception{
+        httpAdapter = createAdaptor(adaptorClassName, false);
+        httpAdapterWithCookies = createAdaptor(adaptorClassName, true);
     }
 
     @Test
@@ -66,11 +66,11 @@ public class HttpAdaptorTest {
         PostRequest postRequest = new PostRequest(TEST_URL, 1);
         postRequest.addStringPart(REQ_PAR_OP, OP_SET_SESSION_VALUE);
         postRequest.addStringPart(REQ_PAR_VALUE, TEXT_VALUE);
-        httpAdaptorWithCookies.execute(postRequest);
+        httpAdapterWithCookies.execute(postRequest);
 
         postRequest = new PostRequest(TEST_URL, 1);
         postRequest.addStringPart(REQ_PAR_OP, OP_GET_SESSION_VALUE);
-        Response response = httpAdaptorWithCookies.execute(postRequest);
+        Response response = httpAdapterWithCookies.execute(postRequest);
 
         assertEquals(response.getStringResponse(), TEXT_VALUE);
     }
@@ -81,7 +81,7 @@ public class HttpAdaptorTest {
         postRequest.addStringPart(REQ_PAR_OP, OP_PLAIN_TEXT);
         postRequest.addStringPart(REQ_PAR_VALUE, TEXT_VALUE);
 
-        Response response = httpAdaptor.execute(postRequest);
+        Response response = httpAdapter.execute(postRequest);
 
         assertEquals(response.getStringResponse(), TEXT_VALUE);
     }
@@ -93,7 +93,7 @@ public class HttpAdaptorTest {
         postRequest.addStringPart(REQ_PAR_VALUE, TEXT_VALUE);
         postRequest.addBinaryPart(REQ_PAR_BIN_VALUE, TEXT_VALUE.getBytes());
 
-        Response response = httpAdaptor.execute(postRequest);
+        Response response = httpAdapter.execute(postRequest);
 
         ByteArrayOutputStream content = new ByteArrayOutputStream();
         byte[] buffer = new byte[2048];
@@ -106,7 +106,7 @@ public class HttpAdaptorTest {
         assertArrayEquals(content.toByteArray(), TEXT_VALUE.getBytes());
     }
 
-    private HttpAdaptor createAdaptor(String adaptorBuilderClassName, boolean useCookies) throws Exception {
+    private HttpAdapter createAdaptor(String adaptorBuilderClassName, boolean useCookies) throws Exception {
         Class<?> adaptorClass = Class.forName(adaptorBuilderClassName);
         Constructor<?> ctor = adaptorClass.getConstructor();
         HttpAdaptorBuilder adaptorBuilder =  (HttpAdaptorBuilder)ctor.newInstance();

@@ -1,8 +1,12 @@
 package com.logiforge.ballo;
 
 import com.logiforge.ballo.auth.facade.AuthFacade;
-import com.logiforge.ballo.auth.facade.DefaultAuthFacade;
-import com.logiforge.ballo.dao.DaoContext;
+import com.logiforge.ballo.dao.DbAdapter;
+import com.logiforge.ballo.sync.protocol.SyncProtocol;
+import com.logiforge.ballo.sync.protocol.conversion.SyncEntityConverter;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by iorlanov on 10/20/17.
@@ -11,14 +15,14 @@ import com.logiforge.ballo.dao.DaoContext;
 public class Ballo {
     static Ballo instance;
 
-    public static void init(DaoContext daoContext, AuthFacade authFacade) throws Exception {
-        instance = new Ballo(daoContext, authFacade);
+    public static void init(DbAdapter dbAdapter, AuthFacade authFacade, SyncProtocol syncProtocol) throws Exception {
+        instance = new Ballo(dbAdapter, authFacade, syncProtocol);
 
     }
 
-    public static DaoContext daoContext() {
+    public static DbAdapter db() {
         if(instance != null) {
-            return instance.daoContext;
+            return instance.dbAdapter;
         } else {
             return null;
         }
@@ -32,15 +36,27 @@ public class Ballo {
         }
     }
 
-    private DaoContext daoContext;
+    public static SyncProtocol syncProtocol() {
+        if(instance != null) {
+            return instance.syncProtocol;
+        } else {
+            return null;
+        }
+    }
+
+    private DbAdapter dbAdapter;
     private AuthFacade authFacade;
-    private Ballo(DaoContext daoContext, AuthFacade authFacade) throws Exception {
+    private SyncProtocol syncProtocol;
+    private Ballo(DbAdapter dbAdapter, AuthFacade authFacade, SyncProtocol syncProtocol) throws Exception {
         instance = this;
 
-        this.daoContext = daoContext;
-        this.daoContext.init();
+        this.dbAdapter = dbAdapter;
+        this.dbAdapter.init();
 
         this.authFacade = authFacade;
         authFacade.init();
+
+        this.syncProtocol = syncProtocol;
+        syncProtocol.init();
     }
 }

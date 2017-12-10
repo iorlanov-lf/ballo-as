@@ -1,6 +1,6 @@
 package com.logiforge.ballo.net.httpclient;
 
-import com.logiforge.ballo.net.HttpAdaptor;
+import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.PostRequest;
 import com.logiforge.ballo.net.Response;
 
@@ -28,11 +28,11 @@ import java.util.Map;
  * Created by iorlanov on 8/15/17.
  */
 
-public class HttpClientAdaptor implements HttpAdaptor {
+public class HttpClientAdapter implements HttpAdapter {
     HttpClient client;
     HttpContext httpContext;
 
-    public HttpClientAdaptor(HttpClient client) {
+    public HttpClientAdapter(HttpClient client) {
         this.client = client;
 
     }

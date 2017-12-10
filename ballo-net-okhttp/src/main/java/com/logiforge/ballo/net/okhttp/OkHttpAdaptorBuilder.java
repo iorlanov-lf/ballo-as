@@ -1,6 +1,6 @@
 package com.logiforge.ballo.net.okhttp;
 
-import com.logiforge.ballo.net.HttpAdaptor;
+import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
 
 import java.util.ArrayList;
@@ -49,7 +49,7 @@ public class OkHttpAdaptorBuilder implements HttpAdaptorBuilder {
     }
 
     @Override
-    public HttpAdaptor build() {
+    public HttpAdapter build() {
         OkHttpClient.Builder rawBuilder = new OkHttpClient.Builder();
         if(useCookies) {
             rawBuilder.cookieJar(new CookieJar() {
@@ -69,6 +69,6 @@ public class OkHttpAdaptorBuilder implements HttpAdaptorBuilder {
         }
         OkHttpClient client = rawBuilder.build();
 
-        return new OkHttpAdaptor(client);
+        return new OkHttpAdapter(client);
     }
 }

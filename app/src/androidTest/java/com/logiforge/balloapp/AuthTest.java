@@ -16,13 +16,15 @@ import com.logiforge.ballo.auth.facade.DefaultAuthFacade;
 import com.logiforge.ballo.auth.model.api.SimpleResponse;
 import com.logiforge.ballo.auth.model.api.UserAuthResult;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
-import com.logiforge.ballo.dao.DaoContext;
-import com.logiforge.ballo.dao.sqlite.SqliteDaoContext;
-import com.logiforge.ballo.net.HttpAdaptor;
+import com.logiforge.ballo.dao.DbAdapter;
+import com.logiforge.ballo.dao.sqlite.SqliteDbAdapter;
+import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
 import com.logiforge.ballo.net.PostRequest;
 import com.logiforge.ballo.net.Response;
 import com.logiforge.ballo.net.okhttp.OkHttpAdaptorBuilder;
+import com.logiforge.ballo.sync.protocol.DefaultSyncProtocol;
+import com.logiforge.ballo.sync.protocol.SyncProtocol;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -54,7 +56,7 @@ public class AuthTest {
     private static final String HTTP_ADAPTER_CLASS_NAME = "com.logiforge.ballo.net.okhttp.OkHttpAdaptorBuilder";
 
     private static Context appContext;
-    private static HttpAdaptor httpAdaptorWithCookies;
+    private static HttpAdapter httpAdapterWithCookies;
 
     @BeforeClass
     public static void classStartUp() {
@@ -65,11 +67,11 @@ public class AuthTest {
 
             BalloAppSQLiteOpenHelper balloAppSQLiteOpenHelper = new BalloAppSQLiteOpenHelper(appContext);
             SQLiteDatabase sqliteDb = balloAppSQLiteOpenHelper.getWritableDatabase();
-            DaoContext daoContext = new SqliteDaoContext(sqliteDb);
+            DbAdapter dbAdapter = new SqliteDbAdapter(sqliteDb);
 
             ApiObjectFactory apiObjFactory = new ApiObjectFactory() {
                 @Override
-                public HttpAdaptor getHttpAdapter() {
+                public HttpAdapter getHttpAdapter() {
                     HttpAdaptorBuilder httpAdaptorBuilder = new OkHttpAdaptorBuilder();
                     return httpAdaptorBuilder.build();
                 }
@@ -93,9 +95,19 @@ public class AuthTest {
             };
 
             AuthFacade authFacade = new DefaultAuthFacade(authParams, apiObjFactory);
-            Ballo.init(daoContext, authFacade);
 
-            AppIdentityDao appIdentityDao = daoContext.getDao(AppIdentityDao.class);
+            // sync protocol
+            SyncProtocol syncProtocol = new DefaultSyncProtocol() {
+
+                @Override
+                public void init() {
+                    //this.syncEntityConverters.put(Facility.class.getName())
+                }
+            };
+
+            Ballo.init(dbAdapter, authFacade, syncProtocol);
+
+            AppIdentityDao appIdentityDao = dbAdapter.getDao(AppIdentityDao.class);
             AppIdentity appIdentity = appIdentityDao.getAppIdentity();
             Assert.assertNotNull(appIdentity);
             Assert.assertNotNull(appIdentity.getAppId());
@@ -103,13 +115,13 @@ public class AuthTest {
             String appId = Ballo.authFacade().getAppId();
             Assert.assertNotNull(appId);
 
-            httpAdaptorWithCookies = createAdaptor(HTTP_ADAPTER_CLASS_NAME, true);
+            httpAdapterWithCookies = createAdaptor(HTTP_ADAPTER_CLASS_NAME, true);
         } catch(Exception ex) {
             fail(ex.getMessage());
         }
     }
 
-    private static HttpAdaptor createAdaptor(String adaptorBuilderClassName, boolean useCookies) throws Exception {
+    private static HttpAdapter createAdaptor(String adaptorBuilderClassName, boolean useCookies) throws Exception {
         Class<?> adaptorClass = Class.forName(adaptorBuilderClassName);
         Constructor<?> ctor = adaptorClass.getConstructor();
         HttpAdaptorBuilder adaptorBuilder =  (HttpAdaptorBuilder)ctor.newInstance();
@@ -176,7 +188,7 @@ public class AuthTest {
         postRequest.addStringPart(PAR_USER_NAME, "su");
         postRequest.addStringPart(PAR_PASSWORD, "TC_LF_1963");
 
-        return httpAdaptorWithCookies.execute(postRequest);
+        return httpAdapterWithCookies.execute(postRequest);
     }
 
     private Response deleteUser(String userName) throws java.io.IOException {
@@ -187,7 +199,7 @@ public class AuthTest {
         postRequest.addStringPart(PAR_MODE, "session");
         postRequest.addStringPart(PAR_USER_NAME, userName);
 
-        return httpAdaptorWithCookies.execute(postRequest);
+        return httpAdapterWithCookies.execute(postRequest);
     }
 
 

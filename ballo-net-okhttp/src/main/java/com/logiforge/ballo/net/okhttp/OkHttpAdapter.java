@@ -1,6 +1,6 @@
 package com.logiforge.ballo.net.okhttp;
 
-import com.logiforge.ballo.net.HttpAdaptor;
+import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.PostRequest;
 import com.logiforge.ballo.net.Response;
 
@@ -18,12 +18,12 @@ import okhttp3.RequestBody;
  * Created by iorlanov on 8/16/17.
  */
 
-public class OkHttpAdaptor implements HttpAdaptor {
+public class OkHttpAdapter implements HttpAdapter {
     private static final MediaType MEDIA_TYPE_BINARY = MediaType.parse("application/octet-stream");
 
     OkHttpClient client;
 
-    public OkHttpAdaptor (OkHttpClient client) {
+    public OkHttpAdapter(OkHttpClient client) {
         this.client = client;
     }
 

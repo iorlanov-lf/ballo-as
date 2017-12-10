@@ -25,6 +25,8 @@ import com.logiforge.ballo.model.api.LogContext;
 import com.logiforge.ballo.model.db.BalloLog;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -34,9 +36,10 @@ import java.util.UUID;
 public class DefaultAuthFacade implements AuthFacade {
     static final String TAG = AuthFacade.class.getSimpleName();
 
-    String appId;
+    AppIdentity appIdentity;
     AuthParams authParams;
     ApiObjectFactory apiObjectFactory;
+    List<AuthEventHandler> eventHandlers = new ArrayList<>();
 
     public DefaultAuthFacade(AuthParams authParam, ApiObjectFactory apiObjectFactory) {
         this.authParams = authParam;
@@ -45,19 +48,17 @@ public class DefaultAuthFacade implements AuthFacade {
 
     @Override
     public void init() throws Exception {
-        AppIdentityDao appIdentityDao = Ballo.daoContext().getDao(AppIdentityDao.class);
-        AppIdentity appIdentity = appIdentityDao.getAppIdentity();
+        AppIdentityDao appIdentityDao = Ballo.db().getDao(AppIdentityDao.class);
+        appIdentity = appIdentityDao.getAppIdentity();
         if(appIdentity.getAppId() == null) {
-            appId = UUID.randomUUID().toString();
+            String appId = UUID.randomUUID().toString();
             appIdentityDao.setAppId(appId);
-        } else {
-            appId = appIdentity.getAppId();
         }
     }
 
     @Override
     public String getAppId() {
-        return appId;
+        return appIdentity.getAppId();
     }
 
     @Override
@@ -71,6 +72,49 @@ public class DefaultAuthFacade implements AuthFacade {
         }
     }
 
+    @Override
+    public RegistrationOperationResult registerApp(Context context, ApiCallBack callBack, String userName, String password) throws Exception {
+        if(callBack == null) {
+            return execRegisterApp(context, userName, password);
+        } else {
+            RegisterAppTask registerAppTask = new RegisterAppTask(context, callBack, userName, password);
+            registerAppTask.execute();
+            return null;
+        }
+    }
+
+    @Override
+    public RegistrationOperationResult registerAppWithFacebook(Context context, ApiCallBack callBack, String facebookId, String facebookEmail, String facebookDisplayName, String facebookAT) throws Exception {
+        if(callBack == null) {
+            return execRegisterAppWithFacebook(context, facebookId, facebookEmail, facebookDisplayName, facebookAT);
+        } else {
+            RegisterAppWithFacebookTask registerAppWithFacebookTask = new RegisterAppWithFacebookTask(context, callBack, facebookId, facebookEmail, facebookDisplayName, facebookAT);
+            registerAppWithFacebookTask.execute();
+            return null;
+        }
+    }
+
+    @Override
+    public RegistrationOperationResult registerAppWithGoogle(Context context, ApiCallBack callBack, String googleId, String googleEmail, String googleDisplayName, String googleAT) throws Exception {
+        if(callBack == null) {
+            return execRegisterAppWithGoogle(context, googleId, googleEmail, googleDisplayName, googleAT);
+        } else {
+            RegisterAppWithGoogleTask registerAppWithGoogleTask = new RegisterAppWithGoogleTask(context, callBack, googleId, googleEmail, googleDisplayName, googleAT);
+            registerAppWithGoogleTask.execute();
+            return null;
+        }
+    }
+
+    @Override
+    public void registerEventHandler(AuthEventHandler authEventHandler) {
+        eventHandlers.add(authEventHandler);
+    }
+
+    @Override
+    public boolean isCloudRegistered() {
+        return appIdentity.getUserName() != null;
+    }
+
     @NonNull
     private RegistrationOperationResult execRegisterUser(Context context, String userName, String email, String displayName, String password) {
         RegistrationOperationResult result = new RegistrationOperationResult();
@@ -80,9 +124,16 @@ public class DefaultAuthFacade implements AuthFacade {
         try {
             if(registerWithGcm(context, result)) {
                 AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerUser(userName, email, displayName, password, appId, result.gcmId);
+                result.authResult = authApi.registerUser(userName, email, displayName, password, appIdentity.getAppId(), result.gcmId);
 
-                updateAuthenticationData(result);
+                if(result.isUserAuthenticated()) {
+                    AppIdentity newAppIdentity = updateAuthenticationData(result);
+                    for (AuthEventHandler authEventHandler : eventHandlers) {
+                        authEventHandler.onRegisterUser(context, appIdentity, newAppIdentity);
+                    }
+
+                    appIdentity = newAppIdentity;
+                }
             } else {
                 throw new Exception("Unable to register with GCM");
             }
@@ -97,17 +148,6 @@ public class DefaultAuthFacade implements AuthFacade {
         return result;
     }
 
-    @Override
-    public RegistrationOperationResult registerApp(Context context, ApiCallBack callBack, String userName, String password) throws Exception {
-        if(callBack == null) {
-            return execRegisterApp(context, userName, password);
-        } else {
-            RegisterAppTask registerAppTask = new RegisterAppTask(context, callBack, userName, password);
-            registerAppTask.execute();
-            return null;
-        }
-    }
-
     @NonNull
     private RegistrationOperationResult execRegisterApp(Context context, String userName, String password) {
         RegistrationOperationResult result = new RegistrationOperationResult();
@@ -117,9 +157,16 @@ public class DefaultAuthFacade implements AuthFacade {
         try {
             if(registerWithGcm(context, result)) {
                 AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerApp(userName, password, appId, result.gcmId);
+                result.authResult = authApi.registerApp(userName, password, appIdentity.getAppId(), result.gcmId);
 
-                updateAuthenticationData(result);
+                if(result.isUserAuthenticated()) {
+                    AppIdentity newAppIdentity = updateAuthenticationData(result);
+                    for (AuthEventHandler authEventHandler : eventHandlers) {
+                        authEventHandler.onRegisterApp(context, appIdentity, newAppIdentity);
+                    }
+
+                    appIdentity = newAppIdentity;
+                }
             }
         } catch (Exception e) {
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
@@ -130,17 +177,6 @@ public class DefaultAuthFacade implements AuthFacade {
         saveLogs(logContext);
 
         return result;
-    }
-
-    @Override
-    public RegistrationOperationResult registerAppWithFacebook(Context context, ApiCallBack callBack, String facebookId, String facebookEmail, String facebookDisplayName, String facebookAT) throws Exception {
-        if(callBack == null) {
-            return execRegisterAppWithFacebook(context, facebookId, facebookEmail, facebookDisplayName, facebookAT);
-        } else {
-            RegisterAppWithFacebookTask registerAppWithFacebookTask = new RegisterAppWithFacebookTask(context, callBack, facebookId, facebookEmail, facebookDisplayName, facebookAT);
-            registerAppWithFacebookTask.execute();
-            return null;
-        }
     }
 
     @NonNull
@@ -152,9 +188,16 @@ public class DefaultAuthFacade implements AuthFacade {
         try {
             if(registerWithGcm(context, result)) {
                 AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerAppWithFacebook(facebookId, facebookEmail, facebookDisplayName, facebookAT, appId, result.gcmId);
+                result.authResult = authApi.registerAppWithFacebook(facebookId, facebookEmail, facebookDisplayName, facebookAT, appIdentity.getAppId(), result.gcmId);
 
-                updateAuthenticationData(result);
+                if(result.isUserAuthenticated()) {
+                    AppIdentity newAppIdentity = updateAuthenticationData(result);
+                    for (AuthEventHandler authEventHandler : eventHandlers) {
+                        authEventHandler.onRegisterApp(context, appIdentity, newAppIdentity);
+                    }
+
+                    appIdentity = newAppIdentity;
+                }
             }
         } catch (Exception e) {
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
@@ -167,17 +210,6 @@ public class DefaultAuthFacade implements AuthFacade {
         return result;
     }
 
-    @Override
-    public RegistrationOperationResult registerAppWithGoogle(Context context, ApiCallBack callBack, String googleId, String googleEmail, String googleDisplayName, String googleAT) throws Exception {
-        if(callBack == null) {
-            return execRegisterAppWithGoogle(context, googleId, googleEmail, googleDisplayName, googleAT);
-        } else {
-            RegisterAppWithGoogleTask registerAppWithGoogleTask = new RegisterAppWithGoogleTask(context, callBack, googleId, googleEmail, googleDisplayName, googleAT);
-            registerAppWithGoogleTask.execute();
-            return null;
-        }
-    }
-
     @NonNull
     private RegistrationOperationResult execRegisterAppWithGoogle(Context context, String googleId, String googleEmail, String googleDisplayName, String googleAT) {
         RegistrationOperationResult result = new RegistrationOperationResult();
@@ -187,9 +219,16 @@ public class DefaultAuthFacade implements AuthFacade {
         try {
             if(registerWithGcm(context, result)) {
                 AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerAppWithGoogle(googleId, googleEmail, googleDisplayName, googleAT, appId, result.gcmId);
+                result.authResult = authApi.registerAppWithGoogle(googleId, googleEmail, googleDisplayName, googleAT, appIdentity.getAppId(), result.gcmId);
 
-                updateAuthenticationData(result);
+                if(result.isUserAuthenticated()) {
+                    AppIdentity newAppIdentity = updateAuthenticationData(result);
+                    for (AuthEventHandler authEventHandler : eventHandlers) {
+                        authEventHandler.onRegisterApp(context, appIdentity, newAppIdentity);
+                    }
+
+                    appIdentity = newAppIdentity;
+                }
             }
         } catch (Exception e) {
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
@@ -203,64 +242,67 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     private boolean registerWithGcm(Context context, RegistrationOperationResult result) {
-        GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
-        result.playServicesAvailabilityError = googleApiAvailability.isGooglePlayServicesAvailable(context);
-        if(result.playServicesAvailabilityError == ConnectionResult.SUCCESS) {
-            String gcmId = BalloPersistentState.getGcmId(context);
-
-            if (gcmId.isEmpty()) {
-                for(int i=0; i<5; i++) {
-                    if(i>0) {
+        String gcmId = BalloPersistentState.getGcmId(context);
+        if (!gcmId.isEmpty()) {
+            result.gcmId = gcmId;
+            return true;
+        } else {
+            GoogleApiAvailability googleApiAvailability = GoogleApiAvailability.getInstance();
+            result.playServicesAvailabilityError = googleApiAvailability.isGooglePlayServicesAvailable(context);
+            if (result.playServicesAvailabilityError == ConnectionResult.SUCCESS) {
+                for (int i = 0; i < 5; i++) {
+                    if (i > 0) {
                         try {
                             Thread.sleep(1000);
                         } catch (InterruptedException e) {
                         }
                     }
                     try {
-                        InstanceID.getInstance(context).deleteToken(authParams.getGcmSenderId(),"GCM");
-                        gcmId = InstanceID.getInstance(context).getToken(authParams.getGcmSenderId(),"GCM");
+                        InstanceID.getInstance(context).deleteToken(authParams.getGcmSenderId(), "GCM");
+                        gcmId = InstanceID.getInstance(context).getToken(authParams.getGcmSenderId(), "GCM");
                         break;
                     } catch (IOException ex) {
                         Log.i(TAG, "Unable to register with GCM. " + ex.getMessage() + " Attempt " + i);
                     }
                 }
 
-                if(gcmId != null && !gcmId.isEmpty()) {
+                if (gcmId != null && !gcmId.isEmpty()) {
                     BalloPersistentState.setGcmId(context, gcmId);
                 }
-                result.gcmId = gcmId;
-            } else {
-                result.gcmId = gcmId;
-            }
-        } else {
-            result.playServicesAvailabilityErrorString = googleApiAvailability.getErrorString(result.playServicesAvailabilityError);
-        }
 
-        return result.gcmId != null && !result.gcmId.isEmpty();
+                if(gcmId != null && !gcmId.isEmpty()) {
+                    result.gcmId = gcmId;
+                    return true;
+                } else {
+                    return false;
+                }
+
+            } else {
+                result.playServicesAvailabilityErrorString = googleApiAvailability.getErrorString(result.playServicesAvailabilityError);
+                return false;
+            }
+        }
     }
 
-    private void updateAuthenticationData(RegistrationOperationResult result) throws Exception {
+    private AppIdentity updateAuthenticationData(RegistrationOperationResult result) throws Exception {
         UserAuthResult authResult = result.authResult;
-        if(authResult != null) {
 
-            if(authResult.success) {
-                AppIdentityDao appIdentityDao = Ballo.daoContext().getDao(AppIdentityDao.class);
-                appIdentityDao.updateAuthenticationData(
-                        authResult.lfUser.getUserName(), authResult.lfUser.getEmail(), authResult.lfUser.getDisplayName(),
-                        authResult.authTokens.getAccessToken(), authResult.authTokens.getRefreshToken());
-            } else {
-                if(authResult.outcome.equals(UserAuthOutcome.InternalError)) {
-                    throw new Exception("Unknown server side error");
-                }
-            }
-        } else {
-            throw new Exception("No API call response");
-        }
+        AppIdentityDao appIdentityDao = Ballo.db().getDao(AppIdentityDao.class);
+        appIdentityDao.updateAuthenticationData(
+                authResult.lfUser.getUserName(), authResult.lfUser.getEmail(), authResult.lfUser.getDisplayName(),
+                authResult.authTokens.getAccessToken(), authResult.authTokens.getRefreshToken());
+
+        AppIdentity newAppIdentity = new AppIdentity(
+                appIdentity.getAppId(),
+                authResult.lfUser.getUserName(), authResult.lfUser.getEmail(), authResult.lfUser.getDisplayName(),
+                authResult.authTokens.getAccessToken(), authResult.authTokens.getRefreshToken());
+
+        return newAppIdentity;
     }
 
     private void saveLogs(LogContext logContext) {
         if(logContext.logs.size() > 0) {
-            BalloLogDao balloLogDao = Ballo.daoContext().getDao(BalloLogDao.class);
+            BalloLogDao balloLogDao = Ballo.db().getDao(BalloLogDao.class);
             balloLogDao.log(logContext.logs);
         }
     }
