@@ -1,4 +1,4 @@
-package com.logiforge.ballo.auth;
+package com.logiforge.ballo.auth.api;
 
 import com.logiforge.ballo.api.Api;
 import com.logiforge.ballo.api.ApiObjectFactory;

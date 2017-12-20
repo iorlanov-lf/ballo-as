@@ -8,12 +8,12 @@ import java.util.Map;
  * Created by iorlanov on 11/13/17.
  */
 
-public class ZipFacilities extends SyncEntity {
-    public ZipFacilities() {
+public class PostalCodeFacilities extends SyncEntity {
+    public PostalCodeFacilities() {
         super();
     }
 
-    public ZipFacilities(String id, Long version, Integer syncState) {
+    public PostalCodeFacilities(String id, Long version, Integer syncState) {
         super(id, version, syncState);
     }
 

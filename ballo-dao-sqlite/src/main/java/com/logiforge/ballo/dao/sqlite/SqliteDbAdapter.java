@@ -2,6 +2,7 @@ package com.logiforge.ballo.dao.sqlite;
 
 import android.database.sqlite.SQLiteDatabase;
 
+//import com.logiforge.ballo.Ballo;
 import com.logiforge.ballo.auth.dao.AppIdentityDao;
 import com.logiforge.ballo.dao.BalloLogDao;
 import com.logiforge.ballo.dao.BalloSequenceDao;
@@ -9,7 +10,9 @@ import com.logiforge.ballo.dao.Dao;
 import com.logiforge.ballo.dao.DbAdapter;
 import com.logiforge.ballo.dao.DbTransaction;
 import com.logiforge.ballo.dao.sqlite.auth.SqliteAppIdentityDao;
-import com.logiforge.ballo.sync.dao.SyncDao;
+import com.logiforge.ballo.dao.sqlite.sync.SqliteJournalEntryDao;
+import com.logiforge.ballo.sync.dao.SyncEntityDao;
+import com.logiforge.ballo.sync.model.db.JournalEntry;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,7 +24,7 @@ import java.util.Map;
 public class SqliteDbAdapter implements DbAdapter {
     protected SQLiteDatabase db = null;
     protected Map<String, Dao> daos = new HashMap<>();
-    protected Map<String, SyncDao> syncDaos = new HashMap<>();
+    protected Map<String, SyncEntityDao> syncDaos = new HashMap<>();
 
     public SqliteDbAdapter(SQLiteDatabase db) {
         this.db = db;
@@ -35,20 +38,28 @@ public class SqliteDbAdapter implements DbAdapter {
     public void init() throws Exception {
         SqliteAppIdentityDao sqliteAppIdentityDao = new SqliteAppIdentityDao();
         sqliteAppIdentityDao.init();
-        daos.put(AppIdentityDao.class.getName(), sqliteAppIdentityDao);
+        daos.put(AppIdentityDao.class.getSimpleName(), sqliteAppIdentityDao);
 
         SqliteBalloLogDao sqliteBalloLogDao = new SqliteBalloLogDao();
         sqliteBalloLogDao.init();
-        daos.put(BalloLogDao.class.getName(), sqliteBalloLogDao);
+        daos.put(BalloLogDao.class.getSimpleName(), sqliteBalloLogDao);
 
         SqliteBalloSequenceDao sqliteBalloSequenceDao = new SqliteBalloSequenceDao();
         sqliteBalloSequenceDao.init();
-        daos.put(BalloSequenceDao.class.getName(), sqliteBalloSequenceDao);
+        daos.put(BalloSequenceDao.class.getSimpleName(), sqliteBalloSequenceDao);
+
+        SqliteJournalEntryDao sqliteJournalEntryDao = new SqliteJournalEntryDao();
+        sqliteJournalEntryDao.init();
+        daos.put(JournalEntry.class.getSimpleName(), sqliteJournalEntryDao);
+    }
+
+    public void registerDao(String className, Dao dao) {
+        daos.put(className, dao);
     }
 
     @Override
     public <T extends Dao> T getDao(Class clazz) {
-        return (T)daos.get(clazz.getName());
+        return (T)daos.get(clazz.getSimpleName());
     }
 
     @Override
@@ -57,23 +68,23 @@ public class SqliteDbAdapter implements DbAdapter {
     }
 
     @Override
-    public <T extends SyncDao> T getSyncDao(Class clazz) {
-        return (T)syncDaos.get(clazz.getName());
+    public <T extends SyncEntityDao> T getSyncDao(Class clazz) {
+        return (T)syncDaos.get(clazz.getSimpleName());
     }
 
     @Override
-    public <T extends SyncDao> T getSyncDao(String className) {
+    public <T extends SyncEntityDao> T getSyncDao(String className) {
         return (T)syncDaos.get(className);
     }
 
     @Override
-    public DbTransaction beginUiTxn(Long action, boolean isSemaforeSynchronized) throws Exception {
-        return beginTxn(action, isSemaforeSynchronized);
+    public DbTransaction beginTxn(Long action, boolean isSemaforeSynchronized) throws Exception {
+        return doBeginTxn(action, isSemaforeSynchronized);
     }
 
     @Override
     public DbTransaction beginSyncTxn() throws Exception {
-        return beginTxn(null, true);
+        return doBeginTxn(null, true);
     }
 
     @Override
@@ -95,7 +106,7 @@ public class SqliteDbAdapter implements DbAdapter {
         }
     }
 
-    protected DbTransaction beginTxn(Long action, boolean isSemaforeSynchronized) throws Exception {
+    protected DbTransaction doBeginTxn(Long action, boolean isSemaforeSynchronized) throws Exception {
         DbTransaction txn = null;
 
         if(isSemaforeSynchronized) {

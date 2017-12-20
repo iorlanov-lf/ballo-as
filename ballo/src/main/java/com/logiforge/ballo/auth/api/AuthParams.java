@@ -1,4 +1,4 @@
-package com.logiforge.ballo.auth;
+package com.logiforge.ballo.auth.api;
 
 public interface AuthParams {
 	String getAuthUrl(String op);

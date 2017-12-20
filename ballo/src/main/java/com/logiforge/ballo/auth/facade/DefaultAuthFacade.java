@@ -13,11 +13,10 @@ import com.logiforge.ballo.Ballo;
 import com.logiforge.ballo.BalloPersistentState;
 import com.logiforge.ballo.api.ApiCallBack;
 import com.logiforge.ballo.api.ApiObjectFactory;
-import com.logiforge.ballo.auth.AuthApi;
+import com.logiforge.ballo.auth.api.AuthApi;
 import com.logiforge.ballo.auth.model.api.RegistrationOperationResult;
-import com.logiforge.ballo.auth.AuthParams;
+import com.logiforge.ballo.auth.api.AuthParams;
 import com.logiforge.ballo.auth.dao.AppIdentityDao;
-import com.logiforge.ballo.auth.model.api.UserAuthOutcome;
 import com.logiforge.ballo.auth.model.api.UserAuthResult;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
 import com.logiforge.ballo.dao.BalloLogDao;
@@ -36,10 +35,10 @@ import java.util.UUID;
 public class DefaultAuthFacade implements AuthFacade {
     static final String TAG = AuthFacade.class.getSimpleName();
 
-    AppIdentity appIdentity;
-    AuthParams authParams;
-    ApiObjectFactory apiObjectFactory;
-    List<AuthEventHandler> eventHandlers = new ArrayList<>();
+    protected AppIdentity appIdentity;
+    protected AuthParams authParams;
+    protected ApiObjectFactory apiObjectFactory;
+    protected List<AuthEventHandler> eventHandlers = new ArrayList<>();
 
     public DefaultAuthFacade(AuthParams authParam, ApiObjectFactory apiObjectFactory) {
         this.authParams = authParam;

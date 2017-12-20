@@ -1,6 +1,6 @@
 package com.logiforge.ballo.dao;
 
-import com.logiforge.ballo.sync.dao.SyncDao;
+import com.logiforge.ballo.sync.dao.SyncEntityDao;
 
 /**
  * Created by iorlanov on 10/20/17.
@@ -8,14 +8,16 @@ import com.logiforge.ballo.sync.dao.SyncDao;
 
 public interface DbAdapter {
     void init() throws Exception;
-    public <T extends Dao> T getDao(Class clazz);
-    public <T extends Dao> T getDao(String className);
+    
+    void registerDao(String className, Dao dao);
+    <T extends Dao> T getDao(Class clazz);
+    <T extends Dao> T getDao(String className);
 
-    public <T extends SyncDao> T getSyncDao(Class clazz);
-    public <T extends SyncDao> T getSyncDao(String className);
+    <T extends SyncEntityDao> T getSyncDao(Class clazz);
+    <T extends SyncEntityDao> T getSyncDao(String className);
 
-    public DbTransaction beginUiTxn(Long action, boolean isSemaforeSynchronized) throws Exception;
-    public DbTransaction beginSyncTxn() throws Exception;
-    public void commitTxn(DbTransaction txn);
-    public void endTxn(DbTransaction txn);
+    DbTransaction beginTxn(Long action, boolean isSemaforeSynchronized) throws Exception;
+    DbTransaction beginSyncTxn() throws Exception;
+    void commitTxn(DbTransaction txn);
+    void endTxn(DbTransaction txn);
 }
