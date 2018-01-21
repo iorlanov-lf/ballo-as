@@ -2,6 +2,7 @@ package com.logiforge.ballo;
 
 import com.logiforge.ballo.auth.facade.AuthFacade;
 import com.logiforge.ballo.dao.DbAdapter;
+import com.logiforge.ballo.sync.facade.SyncFacade;
 import com.logiforge.ballo.sync.protocol.SyncProtocol;
 import com.logiforge.ballo.sync.protocol.conversion.SyncEntityConverter;
 
@@ -15,8 +16,8 @@ import java.util.Map;
 public class Ballo {
     static Ballo instance;
 
-    public static void init(DbAdapter dbAdapter, AuthFacade authFacade, SyncProtocol syncProtocol) throws Exception {
-        instance = new Ballo(dbAdapter, authFacade, syncProtocol);
+    public static void init(DbAdapter dbAdapter, AuthFacade authFacade, SyncFacade syncFacade) throws Exception {
+        instance = new Ballo(dbAdapter, authFacade, syncFacade);
 
     }
 
@@ -36,9 +37,9 @@ public class Ballo {
         }
     }
 
-    public static SyncProtocol syncProtocol() {
+    public static SyncFacade syncFacade() {
         if(instance != null) {
-            return instance.syncProtocol;
+            return instance.syncFacade;
         } else {
             return null;
         }
@@ -46,8 +47,8 @@ public class Ballo {
 
     private DbAdapter dbAdapter;
     private AuthFacade authFacade;
-    private SyncProtocol syncProtocol;
-    private Ballo(DbAdapter dbAdapter, AuthFacade authFacade, SyncProtocol syncProtocol) throws Exception {
+    private SyncFacade syncFacade;
+    private Ballo(DbAdapter dbAdapter, AuthFacade authFacade, SyncFacade syncFacade) throws Exception {
         instance = this;
 
         this.dbAdapter = dbAdapter;
@@ -56,7 +57,7 @@ public class Ballo {
         this.authFacade = authFacade;
         authFacade.init();
 
-        this.syncProtocol = syncProtocol;
-        syncProtocol.init();
+        this.syncFacade = syncFacade;
+        syncFacade.init();
     }
 }

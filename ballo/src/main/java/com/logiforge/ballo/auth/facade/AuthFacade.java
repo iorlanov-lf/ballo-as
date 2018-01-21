@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.logiforge.ballo.api.ApiCallBack;
 import com.logiforge.ballo.auth.model.api.RegistrationOperationResult;
+import com.logiforge.ballo.net.PostRequest;
 
 /**
  * Created by iorlanov on 10/21/17.
@@ -22,4 +23,8 @@ public interface AuthFacade {
     void registerEventHandler(AuthEventHandler authEventHandler);
 
     boolean isCloudRegistered();
+
+    void addApiAuthenticationData(PostRequest postRequest);
+
+    boolean onAuthenticatedCallFailure(Context context, int apiAuthenticationOutcome) throws Exception;
 }

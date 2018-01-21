@@ -1,5 +1,7 @@
 package com.logiforge.ballo.auth.model.api;
 
+import com.logiforge.ballo.model.api.SimpleResponse;
+
 public class UserAuthResult extends SimpleResponse {
 
 	public UserAuthOutcome outcome;

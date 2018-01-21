@@ -8,19 +8,22 @@ import com.google.gson.GsonBuilder;
 import com.logiforge.ballo.Ballo;
 import com.logiforge.ballo.auth.model.api.RegistrationOperationResult;
 import com.logiforge.ballo.auth.dao.AppIdentityDao;
-import com.logiforge.ballo.auth.model.api.SimpleResponse;
+import com.logiforge.ballo.model.api.SimpleResponse;
 import com.logiforge.ballo.auth.model.api.UserAuthResult;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
 import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
 import com.logiforge.ballo.net.PostRequest;
 import com.logiforge.ballo.net.Response;
+import com.logiforge.ballo.sync.dao.AppSubscriptionDao;
+import com.logiforge.ballo.sync.model.db.AppSubscription;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
+import java.util.List;
 
 import static junit.framework.Assert.fail;
 import static junit.framework.TestCase.assertNotNull;
@@ -109,17 +112,31 @@ public class AuthTest {
         assertNotNull(result);
         assertNotNull(result.authResult);
         assertTrue(result.authResult.success);
+
+        AppSubscriptionDao appSubscriptionDao = Ballo.db().getDao(AppSubscription.class);
+        List<AppSubscription> subscriptions = appSubscriptionDao.getAllSubscriptions();
+        assertEquals(1, subscriptions.size());
     }
 
     @Test
     public void registerApp() throws Exception {
         deleteUser("iorlanov");
 
+        // set the app id
+        AppIdentityDao appIdentityDao = Ballo.db().getDao(AppIdentityDao.class);
+        appIdentityDao.setAppId("firstAppId");
+        Ballo.authFacade().init();
+
         RegistrationOperationResult result = Ballo.authFacade().registerUser(appContext, null, "iorlanov", "iorlanov@comcast.net", "Igor Orlanov", "1111111i");
         assertNotNull(result);
         assertNotNull(result.authResult);
         assertTrue(result.authResult.success);
 
+        // change the app id
+        appIdentityDao.setAppId("anotherAppId");
+        Ballo.authFacade().init();
+
+        // register new app
         result = Ballo.authFacade().registerApp(appContext, null, "iorlanov", "1111111i");
         assertNotNull(result);
         assertNotNull(result.authResult);

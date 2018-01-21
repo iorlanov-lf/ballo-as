@@ -12,12 +12,15 @@ import java.util.Map;
 import java.util.UUID;
 
 import com.logiforge.ballo.sync.dao.SyncEntityDao;
+import com.logiforge.ballo.sync.protocol.SyncProtocol;
 
 /**
  * Created by iorlanov on 11/22/17.
  */
 
 public abstract class DefaultSyncEntityDaoFacade implements SyncEntityDaoFacade {
+    protected SyncProtocol syncProtocol;
+
     abstract protected String getEntityClassName();
     abstract protected String getSyncParentEntityClassName();
     abstract protected boolean isSyncRootEntity();
@@ -26,6 +29,10 @@ public abstract class DefaultSyncEntityDaoFacade implements SyncEntityDaoFacade 
 
     abstract protected List<SyncEntity> getChildren(String id);
     abstract protected void deleteChildren(String id);
+
+    public DefaultSyncEntityDaoFacade(SyncProtocol syncProtocol) {
+        this.syncProtocol = syncProtocol;
+    }
 
 
     protected void onUiAdd(SyncEntity entity) {
@@ -199,13 +206,13 @@ public abstract class DefaultSyncEntityDaoFacade implements SyncEntityDaoFacade 
     }
 
     private void journalOnCreated(DbTransaction txn, SyncEntity entity, String syncParentId, Long syncParentVersion) throws Exception {
-        byte[] entityAsBytes = Ballo.syncProtocol().getSyncEntityConverter(this.getEntityClassName()).toBytes(entity);
+        byte[] entityAsBytes = syncProtocol.getSyncEntityConverter(this.getEntityClassName()).toBytes(entity);
         JournalEntryDao journalDao = Ballo.db().getDao(JournalEntry.class);
         journalDao.onEntityCreated(txn, entity, entityAsBytes, this.getSyncParentEntityClassName(), syncParentId, syncParentVersion);
     }
 
     private void journalOnUpdated(DbTransaction txn, SyncEntity entity, String syncParentId, Long syncParentVersion) throws Exception {
-        byte[] entityAsBytes = Ballo.syncProtocol().getSyncEntityConverter(this.getEntityClassName()).changesToBytes(entity.changes);
+        byte[] entityAsBytes = syncProtocol.getSyncEntityConverter(this.getEntityClassName()).changesToBytes(entity.changes);
         JournalEntryDao journalDao = Ballo.db().getDao(JournalEntry.class);
         journalDao.onEntityUpdated(txn, entity, entityAsBytes, this.getSyncParentEntityClassName(), syncParentId, syncParentVersion);
     }

@@ -54,7 +54,7 @@ public class FacilityTest {
             Facility createdFacility = createFacility();
             assertNotNull(createdFacility);
 
-            SyncEntityDaoFacade facilityDaoFacade = Ballo.syncProtocol().getSyncEntityDaoFacade(Facility.class);
+            SyncEntityDaoFacade facilityDaoFacade = Ballo.syncFacade().syncProtocol().getSyncEntityDaoFacade(Facility.class);
             Facility foundFacility = facilityDaoFacade.find(createdFacility.id);
             assertNotNull(foundFacility);
 
@@ -64,7 +64,7 @@ public class FacilityTest {
 
             JournalEntry journalEntry = journalEntries.get(0);
             byte[] blobData = journalDao.getBlobData(journalEntry.id);
-            SyncEntityConverter facilityConverter = Ballo.syncProtocol().getSyncEntityConverter(Facility.class);
+            SyncEntityConverter facilityConverter = Ballo.syncFacade().syncProtocol().getSyncEntityConverter(Facility.class);
             Facility unpackedFacility = (Facility) facilityConverter.fromBytes(blobData);
             assertNotNull(unpackedFacility);
 
@@ -83,7 +83,7 @@ public class FacilityTest {
             assertNotNull(createdFacility);
 
             createdFacility.setStreetAddress(NEW_STREET_ADDRESS);
-            SyncEntityDaoFacade facilityDaoFacade = Ballo.syncProtocol().getSyncEntityDaoFacade(Facility.class);
+            SyncEntityDaoFacade facilityDaoFacade = Ballo.syncFacade().syncProtocol().getSyncEntityDaoFacade(Facility.class);
 
             TransactionFacade txnFacade = new DefaultTransactionFacade();
             DbTransaction txn = txnFacade.beginTxn(20L);
@@ -106,7 +106,7 @@ public class FacilityTest {
 
             JournalEntry journalEntry = journalEntries.get(1);
             byte[] blobData = journalDao.getBlobData(journalEntry.id);
-            SyncEntityConverter facilityConverter = Ballo.syncProtocol().getSyncEntityConverter(Facility.class);
+            SyncEntityConverter facilityConverter = Ballo.syncFacade().syncProtocol().getSyncEntityConverter(Facility.class);
             Map<Integer, SyncEntity.ValuePair> unpackedChanges = facilityConverter.changesFromBytes(blobData);
             assertNotNull(unpackedChanges);
 
@@ -127,7 +127,7 @@ public class FacilityTest {
             Facility createdFacility = createFacility();
             assertNotNull(createdFacility);
 
-            SyncEntityDaoFacade facilityDaoFacade = Ballo.syncProtocol().getSyncEntityDaoFacade(Facility.class);
+            SyncEntityDaoFacade facilityDaoFacade = Ballo.syncFacade().syncProtocol().getSyncEntityDaoFacade(Facility.class);
             Facility foundFacility = facilityDaoFacade.find(createdFacility.id);
             assertNotNull(foundFacility);
 
@@ -165,7 +165,7 @@ public class FacilityTest {
                     "Jones Bridge Swim & Racket Club", "4403 Whitecap Ln", "Norcross", "GA", "30092",
                     "From GA 141, turn onto East Jones Bridge Road. Turn right to Whitewater Dr. Turn left to Whitewater Ln.", "iorlanov");
 
-            SyncEntityDaoFacade facilityDaoFacade = Ballo.syncProtocol().getSyncEntityDaoFacade(Facility.class);
+            SyncEntityDaoFacade facilityDaoFacade = Ballo.syncFacade().syncProtocol().getSyncEntityDaoFacade(Facility.class);
             facilityDaoFacade.add(txn, facilityToAdd);
 
 

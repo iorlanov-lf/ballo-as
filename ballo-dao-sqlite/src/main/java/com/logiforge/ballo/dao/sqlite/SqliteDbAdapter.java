@@ -10,8 +10,10 @@ import com.logiforge.ballo.dao.Dao;
 import com.logiforge.ballo.dao.DbAdapter;
 import com.logiforge.ballo.dao.DbTransaction;
 import com.logiforge.ballo.dao.sqlite.auth.SqliteAppIdentityDao;
+import com.logiforge.ballo.dao.sqlite.sync.SqliteAppSubscriptionDao;
 import com.logiforge.ballo.dao.sqlite.sync.SqliteJournalEntryDao;
 import com.logiforge.ballo.sync.dao.SyncEntityDao;
+import com.logiforge.ballo.sync.model.db.AppSubscription;
 import com.logiforge.ballo.sync.model.db.JournalEntry;
 
 import java.util.HashMap;
@@ -36,10 +38,6 @@ public class SqliteDbAdapter implements DbAdapter {
 
     @Override
     public void init() throws Exception {
-        SqliteAppIdentityDao sqliteAppIdentityDao = new SqliteAppIdentityDao();
-        sqliteAppIdentityDao.init();
-        daos.put(AppIdentityDao.class.getSimpleName(), sqliteAppIdentityDao);
-
         SqliteBalloLogDao sqliteBalloLogDao = new SqliteBalloLogDao();
         sqliteBalloLogDao.init();
         daos.put(BalloLogDao.class.getSimpleName(), sqliteBalloLogDao);
@@ -47,10 +45,6 @@ public class SqliteDbAdapter implements DbAdapter {
         SqliteBalloSequenceDao sqliteBalloSequenceDao = new SqliteBalloSequenceDao();
         sqliteBalloSequenceDao.init();
         daos.put(BalloSequenceDao.class.getSimpleName(), sqliteBalloSequenceDao);
-
-        SqliteJournalEntryDao sqliteJournalEntryDao = new SqliteJournalEntryDao();
-        sqliteJournalEntryDao.init();
-        daos.put(JournalEntry.class.getSimpleName(), sqliteJournalEntryDao);
     }
 
     public void registerDao(String className, Dao dao) {

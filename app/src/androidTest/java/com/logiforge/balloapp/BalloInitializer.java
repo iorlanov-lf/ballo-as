@@ -9,12 +9,19 @@ import com.logiforge.ballo.Ballo;
 import com.logiforge.ballo.api.ApiObjectFactory;
 import com.logiforge.ballo.auth.api.AuthParams;
 import com.logiforge.ballo.auth.dao.AppIdentityDao;
+import com.logiforge.ballo.auth.dao.AuthDaoInitializer;
 import com.logiforge.ballo.auth.facade.AuthFacade;
 import com.logiforge.ballo.auth.facade.DefaultAuthFacade;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
+import com.logiforge.ballo.dao.sqlite.auth.SqliteDefaultAuthDaoInitializer;
+import com.logiforge.ballo.dao.sqlite.sync.SqliteSyncDaoInitializer;
 import com.logiforge.ballo.net.HttpAdapter;
 import com.logiforge.ballo.net.HttpAdaptorBuilder;
 import com.logiforge.ballo.net.okhttp.OkHttpAdaptorBuilder;
+import com.logiforge.ballo.sync.api.SyncApiParams;
+import com.logiforge.ballo.sync.dao.SyncDaoInitializer;
+import com.logiforge.ballo.sync.facade.SyncAuthEventHandler;
+import com.logiforge.ballo.sync.facade.SyncFacade;
 import com.logiforge.ballo.sync.protocol.DefaultSyncProtocol;
 import com.logiforge.ballo.sync.protocol.SyncProtocol;
 import com.logiforge.balloapp.dao.BalloAppDbAdapter;
@@ -37,7 +44,9 @@ import com.logiforge.balloapp.protocol.dao_facade.PostalCodesDaoFacade;
 
 public class BalloInitializer {
     public static final String AUTH_URL = "http://10.0.0.21:8080/auth";
+    public static final String SYNC_URL = "http://10.0.0.21:8080/sync";
     //private static final String AUTH_URL = "https://ballo-test.appspot.com/auth";
+    //private static final String SYNC_URL = "https://ballo-test.appspot.com/sync";
 
     private static final String GCM_SENDER_ID = "662722394825";
 
@@ -48,6 +57,8 @@ public class BalloInitializer {
         BalloAppDbAdapter dbAdapter = new BalloAppDbAdapter(sqliteDb);
 
         // authentication facade
+        AuthDaoInitializer authDaoInitializer = new SqliteDefaultAuthDaoInitializer();
+
         ApiObjectFactory apiObjFactory = new ApiObjectFactory() {
             @Override
             public HttpAdapter getHttpAdapter() {
@@ -73,29 +84,42 @@ public class BalloInitializer {
             }
         };
 
-        AuthFacade authFacade = new TestAuthFacade(authParams, apiObjFactory);
+        AuthFacade authFacade = new TestAuthFacade(authDaoInitializer, authParams, apiObjFactory);
 
         // sync protocol
+        SyncDaoInitializer syncDaoInitializer = new SqliteSyncDaoInitializer();
+
         SyncProtocol syncProtocol = new DefaultSyncProtocol() {
 
             @Override
             public void init() {
                 this.syncEntityConverters.put(Facility.class.getSimpleName(), new FacilityConverter());
-                this.syncEntityDaoFacades.put(Facility.class.getSimpleName(), new FacilityDaoFacade());
+                this.syncEntityDaoFacades.put(Facility.class.getSimpleName(), new FacilityDaoFacade(this));
 
                 this.syncEntityConverters.put(PostalCodeFacilities.class.getSimpleName(), new PostalCodeFacilitiesConverter());
-                this.syncEntityDaoFacades.put(PostalCodeFacilities.class.getSimpleName(), new PostalCodeFacilitiesDaoFacade());
+                this.syncEntityDaoFacades.put(PostalCodeFacilities.class.getSimpleName(), new PostalCodeFacilitiesDaoFacade(this));
 
                 this.syncEntityConverters.put(PostalCode.class.getSimpleName(), new PostalCodeConverter());
-                this.syncEntityDaoFacades.put(PostalCode.class.getSimpleName(), new PostalCodeDaoFacade());
+                this.syncEntityDaoFacades.put(PostalCode.class.getSimpleName(), new PostalCodeDaoFacade(this));
 
                 this.syncEntityConverters.put(PostalCodes.class.getSimpleName(), new PostalCodesConverter());
-                this.syncEntityDaoFacades.put(PostalCodes.class.getSimpleName(), new PostalCodesDaoFacade());
+                this.syncEntityDaoFacades.put(PostalCodes.class.getSimpleName(), new PostalCodesDaoFacade(this));
             }
         };
 
+        SyncApiParams syncApiParams = new SyncApiParams() {
+            @Override
+            public String getSyncUrl(String op) {
+                return SYNC_URL;
+            }
+        };
+
+        SyncFacade syncFacade = new SyncFacade(syncDaoInitializer, syncProtocol, syncApiParams, apiObjFactory);
+
+        authFacade.registerEventHandler(new SyncAuthEventHandler(syncFacade));
+
         // Ballo initialization
-        Ballo.init(dbAdapter, authFacade, syncProtocol);
+        Ballo.init(dbAdapter, authFacade, syncFacade);
     }
 
     public static void emulateUserRegistration() throws Exception {
@@ -105,8 +129,8 @@ public class BalloInitializer {
     }
 
     public static class TestAuthFacade extends DefaultAuthFacade {
-        public TestAuthFacade(AuthParams authParam, ApiObjectFactory apiObjectFactory) {
-            super(authParam, apiObjectFactory);
+        public TestAuthFacade(AuthDaoInitializer daoInitializer, AuthParams authParam, ApiObjectFactory apiObjectFactory) {
+            super(daoInitializer, authParam, apiObjectFactory);
         }
 
         public void emulateUserRegistration(String userName, String email, String displayName,

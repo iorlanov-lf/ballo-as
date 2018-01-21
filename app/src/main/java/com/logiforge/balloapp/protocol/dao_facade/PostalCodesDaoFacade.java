@@ -2,6 +2,7 @@ package com.logiforge.balloapp.protocol.dao_facade;
 
 import com.logiforge.ballo.Ballo;
 import com.logiforge.ballo.sync.model.db.SyncEntity;
+import com.logiforge.ballo.sync.protocol.SyncProtocol;
 import com.logiforge.ballo.sync.protocol.dao_facade.DefaultSyncEntityDaoFacade;
 import com.logiforge.balloapp.dao.FacilityDao;
 import com.logiforge.balloapp.dao.PostalCodeDao;
@@ -20,6 +21,10 @@ import java.util.List;
 public class PostalCodesDaoFacade extends DefaultSyncEntityDaoFacade {
     static private final String ENTITY_CLASS_NAME = PostalCodes.class.getSimpleName();
     static private final String PARENT_CLASS_NAME = null;
+
+    public PostalCodesDaoFacade(SyncProtocol syncProtocol) {
+        super(syncProtocol);
+    }
 
     @Override
     protected String getEntityClassName() {

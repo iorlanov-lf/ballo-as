@@ -14,14 +14,18 @@ import com.logiforge.ballo.BalloPersistentState;
 import com.logiforge.ballo.api.ApiCallBack;
 import com.logiforge.ballo.api.ApiObjectFactory;
 import com.logiforge.ballo.auth.api.AuthApi;
+import com.logiforge.ballo.auth.dao.AuthDaoInitializer;
+import com.logiforge.ballo.auth.model.api.AuthTokens;
 import com.logiforge.ballo.auth.model.api.RegistrationOperationResult;
 import com.logiforge.ballo.auth.api.AuthParams;
 import com.logiforge.ballo.auth.dao.AppIdentityDao;
 import com.logiforge.ballo.auth.model.api.UserAuthResult;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
 import com.logiforge.ballo.dao.BalloLogDao;
+import com.logiforge.ballo.model.api.ApiAuthOutcome;
 import com.logiforge.ballo.model.api.LogContext;
 import com.logiforge.ballo.model.db.BalloLog;
+import com.logiforge.ballo.net.PostRequest;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,23 +39,28 @@ import java.util.UUID;
 public class DefaultAuthFacade implements AuthFacade {
     static final String TAG = AuthFacade.class.getSimpleName();
 
+    protected AuthDaoInitializer daoInitializer;
     protected AppIdentity appIdentity;
     protected AuthParams authParams;
     protected ApiObjectFactory apiObjectFactory;
     protected List<AuthEventHandler> eventHandlers = new ArrayList<>();
 
-    public DefaultAuthFacade(AuthParams authParam, ApiObjectFactory apiObjectFactory) {
+    public DefaultAuthFacade(AuthDaoInitializer daoInitializer, AuthParams authParam, ApiObjectFactory apiObjectFactory) {
+        this.daoInitializer = daoInitializer;
         this.authParams = authParam;
         this.apiObjectFactory = apiObjectFactory;
     }
 
     @Override
     public void init() throws Exception {
+        daoInitializer.init();
+
         AppIdentityDao appIdentityDao = Ballo.db().getDao(AppIdentityDao.class);
         appIdentity = appIdentityDao.getAppIdentity();
         if(appIdentity.getAppId() == null) {
             String appId = UUID.randomUUID().toString();
             appIdentityDao.setAppId(appId);
+            appIdentity.setAppId(appId);
         }
     }
 
@@ -114,6 +123,34 @@ public class DefaultAuthFacade implements AuthFacade {
         return appIdentity.getUserName() != null;
     }
 
+    @Override
+    public void addApiAuthenticationData(PostRequest postRequest) {
+        postRequest.addStringPart("appId", appIdentity.getAppId());
+        postRequest.addStringPart("appAccessToken", appIdentity.getAccessToken());
+    }
+
+    @Override
+    public boolean onAuthenticatedCallFailure(Context context, int apiAuthenticationOutcome) throws Exception {
+
+        if(apiAuthenticationOutcome == ApiAuthOutcome.AA_EXPIRED) {
+            LogContext logContext = new LogContext("Auth", "GetAccessToken");
+
+            AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
+            AuthTokens authTokens = authApi.getAccessToken(appIdentity.getAppId(), appIdentity.getRefreshToken());
+
+            if(authTokens != null) {
+                AppIdentityDao appIdentityDao = Ballo.db().getDao(AppIdentityDao.class);
+                appIdentityDao.updateAuthToken(authTokens.getAccessToken());
+                appIdentity.setAccessToken(authTokens.getAccessToken());
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     @NonNull
     private RegistrationOperationResult execRegisterUser(Context context, String userName, String email, String displayName, String password) {
         RegistrationOperationResult result = new RegistrationOperationResult();
@@ -123,15 +160,14 @@ public class DefaultAuthFacade implements AuthFacade {
         try {
             if(registerWithGcm(context, result)) {
                 AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerUser(userName, email, displayName, password, appIdentity.getAppId(), result.gcmId);
+                result.authResult = authApi.registerUserAndApp(userName, email, displayName, password, appIdentity.getAppId(), result.gcmId);
 
                 if(result.isUserAuthenticated()) {
-                    AppIdentity newAppIdentity = updateAuthenticationData(result);
+                    AppIdentity oldAppIdentity = appIdentity;
+                    appIdentity = updateAuthenticationData(result);
                     for (AuthEventHandler authEventHandler : eventHandlers) {
-                        authEventHandler.onRegisterUser(context, appIdentity, newAppIdentity);
+                        authEventHandler.onRegisterUser(context, oldAppIdentity, appIdentity);
                     }
-
-                    appIdentity = newAppIdentity;
                 }
             } else {
                 throw new Exception("Unable to register with GCM");
@@ -159,12 +195,11 @@ public class DefaultAuthFacade implements AuthFacade {
                 result.authResult = authApi.registerApp(userName, password, appIdentity.getAppId(), result.gcmId);
 
                 if(result.isUserAuthenticated()) {
-                    AppIdentity newAppIdentity = updateAuthenticationData(result);
+                    AppIdentity oldAppIdentity = appIdentity;
+                    appIdentity = updateAuthenticationData(result);
                     for (AuthEventHandler authEventHandler : eventHandlers) {
-                        authEventHandler.onRegisterApp(context, appIdentity, newAppIdentity);
+                        authEventHandler.onRegisterApp(context, oldAppIdentity, appIdentity);
                     }
-
-                    appIdentity = newAppIdentity;
                 }
             }
         } catch (Exception e) {
@@ -190,12 +225,11 @@ public class DefaultAuthFacade implements AuthFacade {
                 result.authResult = authApi.registerAppWithFacebook(facebookId, facebookEmail, facebookDisplayName, facebookAT, appIdentity.getAppId(), result.gcmId);
 
                 if(result.isUserAuthenticated()) {
-                    AppIdentity newAppIdentity = updateAuthenticationData(result);
+                    AppIdentity oldAppIdentity = appIdentity;
+                    appIdentity = updateAuthenticationData(result);
                     for (AuthEventHandler authEventHandler : eventHandlers) {
-                        authEventHandler.onRegisterApp(context, appIdentity, newAppIdentity);
+                        authEventHandler.onRegisterApp(context, oldAppIdentity, appIdentity);
                     }
-
-                    appIdentity = newAppIdentity;
                 }
             }
         } catch (Exception e) {
@@ -221,12 +255,11 @@ public class DefaultAuthFacade implements AuthFacade {
                 result.authResult = authApi.registerAppWithGoogle(googleId, googleEmail, googleDisplayName, googleAT, appIdentity.getAppId(), result.gcmId);
 
                 if(result.isUserAuthenticated()) {
-                    AppIdentity newAppIdentity = updateAuthenticationData(result);
+                    AppIdentity oldAppIdentity = appIdentity;
+                    appIdentity = updateAuthenticationData(result);
                     for (AuthEventHandler authEventHandler : eventHandlers) {
-                        authEventHandler.onRegisterApp(context, appIdentity, newAppIdentity);
+                        authEventHandler.onRegisterApp(context, oldAppIdentity, appIdentity);
                     }
-
-                    appIdentity = newAppIdentity;
                 }
             }
         } catch (Exception e) {
