@@ -12,4 +12,5 @@ import java.util.List;
 public interface AppSubscriptionDao extends Dao {
     void createAppSubscription(AppSubscription appSubscription) throws Exception;
     List<AppSubscription> getAllSubscriptions() throws Exception;
+    void deleteAll();
 }

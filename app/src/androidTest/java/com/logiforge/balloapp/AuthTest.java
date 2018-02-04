@@ -101,6 +101,10 @@ public class AuthTest {
         SimpleResponse simpleResponse = gson.fromJson(response.getStringResponse(), SimpleResponse.class);
 
         assertTrue(simpleResponse.success);
+
+        AppSubscriptionDao appSubscriptionDao = Ballo.db().getDao(AppSubscription.class);
+        List<AppSubscription> subscriptions = appSubscriptionDao.getAllSubscriptions();
+        assertEquals(0, subscriptions.size());
     }
 
     @Test

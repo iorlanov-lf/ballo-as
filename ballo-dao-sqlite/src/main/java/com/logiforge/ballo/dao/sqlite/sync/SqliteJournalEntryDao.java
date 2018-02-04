@@ -54,7 +54,11 @@ public class SqliteJournalEntryDao extends SqliteDao implements JournalEntryDao 
 	protected SqliteJournalEntryDao(SQLiteDatabase database) {
 		super(database);
 	}
-	
+
+	protected String getTableName() {
+		return TABLE_NAME;
+	}
+
 	public void init() {
 		if (!tableExists(TABLE_NAME)) {
 			db.execSQL(CREATE_STATEMENT);
@@ -183,11 +187,6 @@ public class SqliteJournalEntryDao extends SqliteDao implements JournalEntryDao 
 	@Override
 	public void deleteTxn(Long txnId) {
 		db.delete(TABLE_NAME, COL_TXN_ID+"=?", new String[] {txnId.toString()});
-	}
-
-	@Override
-	public void deleteAll() {
-		db.delete(TABLE_NAME, null, null);
 	}
 
 	@Override

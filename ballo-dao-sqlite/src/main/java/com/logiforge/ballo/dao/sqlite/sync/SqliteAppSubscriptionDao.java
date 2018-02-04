@@ -36,6 +36,11 @@ public class SqliteAppSubscriptionDao extends SqliteDao implements AppSubscripti
         super(database);
     }
 
+    @Override
+    protected String getTableName() {
+        return TABLE_NAME;
+    }
+
     public void init() {
         if (!tableExists(TABLE_NAME)) {
             db.execSQL(CREATE_STATEMENT);

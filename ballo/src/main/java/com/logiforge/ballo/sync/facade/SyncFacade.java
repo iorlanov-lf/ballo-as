@@ -10,9 +10,11 @@ import com.logiforge.ballo.model.db.BalloLog;
 import com.logiforge.ballo.sync.api.SyncApi;
 import com.logiforge.ballo.sync.api.SyncApiParams;
 import com.logiforge.ballo.sync.dao.AppSubscriptionDao;
+import com.logiforge.ballo.sync.dao.JournalEntryDao;
 import com.logiforge.ballo.sync.dao.SyncDaoInitializer;
 import com.logiforge.ballo.sync.model.api.AuthenticatedCallResponse;
 import com.logiforge.ballo.sync.model.db.AppSubscription;
+import com.logiforge.ballo.sync.model.db.JournalEntry;
 import com.logiforge.ballo.sync.protocol.SyncProtocol;
 
 import java.util.List;
@@ -46,9 +48,23 @@ public class SyncFacade {
         return syncProtocol;
     }
 
-    public List<AppSubscription> getAppSubscriptions(Context context, AppIdentity oldIdentity, AppIdentity newIdentity) throws Exception {
-        LogContext logContext = new LogContext("Sync", "getAppSubs");
+    public void deleteUserData(LogContext logContext) throws Exception {
+        DbTransaction txn = db().beginSyncTxn();
+        try {
+        AppSubscriptionDao appSubscriptionDao = db().getDao(AppSubscription.class);
+        appSubscriptionDao.deleteAll();
 
+        JournalEntryDao journalEntryDao = db().getDao(JournalEntry.class);
+        journalEntryDao.deleteAll();
+            db().commitTxn(txn);
+        } catch (Exception e) {
+            logContext.addLog(BalloLog.LVL_ERROR, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+        } finally {
+            db().endTxn(txn);
+        }
+    }
+
+    public List<AppSubscription> getRemoteAppSubscriptions(Context context, LogContext logContext, AppIdentity newIdentity) throws Exception {
         SyncApi syncApi = new SyncApi(context, logContext, apiObjectFactory, syncApiParams);
         AuthenticatedCallResponse<List<AppSubscription>> response =
                 syncApi.getAppSubscriptions();

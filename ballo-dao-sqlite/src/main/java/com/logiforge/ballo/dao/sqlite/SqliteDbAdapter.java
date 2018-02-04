@@ -9,6 +9,7 @@ import com.logiforge.ballo.dao.BalloSequenceDao;
 import com.logiforge.ballo.dao.Dao;
 import com.logiforge.ballo.dao.DbAdapter;
 import com.logiforge.ballo.dao.DbTransaction;
+import com.logiforge.ballo.dao.WorkflowDao;
 import com.logiforge.ballo.dao.sqlite.auth.SqliteAppIdentityDao;
 import com.logiforge.ballo.dao.sqlite.sync.SqliteAppSubscriptionDao;
 import com.logiforge.ballo.dao.sqlite.sync.SqliteJournalEntryDao;
@@ -45,6 +46,10 @@ public class SqliteDbAdapter implements DbAdapter {
         SqliteBalloSequenceDao sqliteBalloSequenceDao = new SqliteBalloSequenceDao();
         sqliteBalloSequenceDao.init();
         daos.put(BalloSequenceDao.class.getSimpleName(), sqliteBalloSequenceDao);
+
+        SqliteWorkflowDao sqliteWorkflowDao = new SqliteWorkflowDao();
+        sqliteWorkflowDao.init();
+        daos.put(WorkflowDao.class.getSimpleName(), sqliteWorkflowDao);
     }
 
     public void registerDao(String className, Dao dao) {

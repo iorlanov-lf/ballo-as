@@ -16,15 +16,21 @@ import com.logiforge.ballo.api.ApiObjectFactory;
 import com.logiforge.ballo.auth.api.AuthApi;
 import com.logiforge.ballo.auth.dao.AuthDaoInitializer;
 import com.logiforge.ballo.auth.model.api.AuthTokens;
+import com.logiforge.ballo.auth.model.api.RegisterAppParams;
+import com.logiforge.ballo.auth.model.api.RegisterAppWithFacebookParams;
+import com.logiforge.ballo.auth.model.api.RegisterAppWithGoogleParams;
+import com.logiforge.ballo.auth.model.api.RegisterUserParams;
 import com.logiforge.ballo.auth.model.api.RegistrationOperationResult;
 import com.logiforge.ballo.auth.api.AuthParams;
 import com.logiforge.ballo.auth.dao.AppIdentityDao;
 import com.logiforge.ballo.auth.model.api.UserAuthResult;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
 import com.logiforge.ballo.dao.BalloLogDao;
+import com.logiforge.ballo.dao.WorkflowDao;
 import com.logiforge.ballo.model.api.ApiAuthOutcome;
 import com.logiforge.ballo.model.api.LogContext;
 import com.logiforge.ballo.model.db.BalloLog;
+import com.logiforge.ballo.model.db.Workflow;
 import com.logiforge.ballo.net.PostRequest;
 
 import java.io.IOException;
@@ -38,6 +44,39 @@ import java.util.UUID;
 
 public class DefaultAuthFacade implements AuthFacade {
     static final String TAG = AuthFacade.class.getSimpleName();
+    public static final String WF_REGISTER_USER = "RegisterUser";
+    public static final String WF_REGISTER_APP = "RegisterApp";
+    public static final String WF_REGISTER_APP_FACEBOOK = "RegisterAppFacebook";
+    public static final String WF_REGISTER_APP_GOOGLE = "RegisterAppGoogle";
+    public static final String LJ_AUTH = "Auth";
+    public static final String LT_REG_USER = "RegUser";
+    public static final String LT_REG_APP = "RegApp";
+    public static final String LT_REG_APP_FACEBOOK = "RegAppFacebook";
+    public static final String LT_REG_APP_GOOGLE = "RegAppGoogle";
+
+    static public class RegisterUserState {
+        public static final int REGISTERED_WITH_GSM = 10;
+        public static final int REGISTERED_USER = 20;
+        public static final int INVOKED_EVENT_HANDLERS = 30;
+    }
+
+    static public class RegisterAppState {
+        public static final int REGISTERED_WITH_GSM = 10;
+        public static final int REGISTERED_APP = 20;
+        public static final int INVOKED_EVENT_HANDLERS = 30;
+    }
+
+    static public class RegisterAppFacebookState {
+        public static final int REGISTERED_WITH_GSM = 10;
+        public static final int REGISTERED_APP = 20;
+        public static final int INVOKED_EVENT_HANDLERS = 30;
+    }
+
+    static public class RegisterAppGoogleState {
+        public static final int REGISTERED_WITH_GSM = 10;
+        public static final int REGISTERED_APP = 20;
+        public static final int INVOKED_EVENT_HANDLERS = 30;
+    }
 
     protected AuthDaoInitializer daoInitializer;
     protected AppIdentity appIdentity;
@@ -70,45 +109,155 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @Override
-    public RegistrationOperationResult registerUser(Context context, ApiCallBack callBack, String userName, String email, String displayName, String password) throws Exception {
+    public RegistrationOperationResult registerUser(Context context, ApiCallBack callBack,
+                                                    RegisterUserParams registerUserParams) throws Exception {
+        registerUserParams.appId = appIdentity.getAppId();
+        Workflow workflow = new Workflow(WF_REGISTER_USER, null, null);
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_USER);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, false, workflow);
+
         if(callBack == null) {
-            return execRegisterUser(context, userName, email, displayName, password);
+            RegistrationOperationResult result = execRegisterUser(opContext, registerUserParams);
+            result.workflow = workflow;
+            return result;
         } else {
-            RegisterUserTask registerUserTask = new RegisterUserTask(context, callBack, userName, email, displayName, password);
+            RegisterUserTask registerUserTask = new RegisterUserTask(opContext, registerUserParams);
             registerUserTask.execute();
             return null;
         }
     }
 
     @Override
-    public RegistrationOperationResult registerApp(Context context, ApiCallBack callBack, String userName, String password) throws Exception {
+    public RegistrationOperationResult resumeRegisterUser(Context context, ApiCallBack callBack, Workflow workflow) {
+
+        if(workflow == null) {
+            WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
+            workflow = workflowDao.find(WF_REGISTER_USER);
+        }
+
+        RegisterUserParams registerUserParams = apiObjectFactory.getGson().fromJson(workflow.clob, RegisterUserParams.class);
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_USER);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, true, workflow);
+
         if(callBack == null) {
-            return execRegisterApp(context, userName, password);
+            return execRegisterUser(opContext, registerUserParams);
         } else {
-            RegisterAppTask registerAppTask = new RegisterAppTask(context, callBack, userName, password);
+            RegisterUserTask registerUserTask = new RegisterUserTask(opContext, registerUserParams);
+            registerUserTask.execute();
+            return null;
+        }
+    }
+
+    @Override
+    public RegistrationOperationResult registerApp(Context context, ApiCallBack callBack, RegisterAppParams registerAppParams) throws Exception {
+        registerAppParams.appId = appIdentity.getAppId();
+        Workflow workflow = new Workflow(WF_REGISTER_APP, null, null);
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, false, workflow);
+
+        if(callBack == null) {
+            RegistrationOperationResult result = execRegisterApp(opContext, registerAppParams);
+            result.workflow = workflow;
+            return result;
+        } else {
+            RegisterAppTask registerAppTask = new RegisterAppTask(opContext, registerAppParams);
             registerAppTask.execute();
             return null;
         }
     }
 
     @Override
-    public RegistrationOperationResult registerAppWithFacebook(Context context, ApiCallBack callBack, String facebookId, String facebookEmail, String facebookDisplayName, String facebookAT) throws Exception {
+    public RegistrationOperationResult resumeRegisterApp(Context context, ApiCallBack callBack, Workflow workflow) {
+
+        if(workflow == null) {
+            WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
+            workflow = workflowDao.find(WF_REGISTER_APP);
+        }
+
+        RegisterAppParams registerAppParams = apiObjectFactory.getGson().fromJson(workflow.clob, RegisterAppParams.class);
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, true, workflow);
+
         if(callBack == null) {
-            return execRegisterAppWithFacebook(context, facebookId, facebookEmail, facebookDisplayName, facebookAT);
+            return execRegisterApp(opContext, registerAppParams);
         } else {
-            RegisterAppWithFacebookTask registerAppWithFacebookTask = new RegisterAppWithFacebookTask(context, callBack, facebookId, facebookEmail, facebookDisplayName, facebookAT);
+            RegisterAppTask registerAppTask = new RegisterAppTask(opContext, registerAppParams);
+            registerAppTask.execute();
+            return null;
+        }
+    }
+
+    @Override
+    public RegistrationOperationResult registerAppWithFacebook(Context context, ApiCallBack callBack, RegisterAppWithFacebookParams params) throws Exception {
+        params.appId = appIdentity.getAppId();
+        Workflow workflow = new Workflow(WF_REGISTER_APP_FACEBOOK, null, null);
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_FACEBOOK);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, false, workflow);
+
+        if(callBack == null) {
+            return execRegisterAppWithFacebook(opContext, params);
+        } else {
+            RegisterAppWithFacebookTask registerAppWithFacebookTask = new RegisterAppWithFacebookTask(opContext, params);
             registerAppWithFacebookTask.execute();
             return null;
         }
     }
 
     @Override
-    public RegistrationOperationResult registerAppWithGoogle(Context context, ApiCallBack callBack, String googleId, String googleEmail, String googleDisplayName, String googleAT) throws Exception {
+    public RegistrationOperationResult resumeRegisterAppWithFacebook(Context context, ApiCallBack callBack, Workflow workflow) {
+
+        if(workflow == null) {
+            WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
+            workflow = workflowDao.find(WF_REGISTER_APP_FACEBOOK);
+        }
+
+        RegisterAppWithFacebookParams params = apiObjectFactory.getGson().fromJson(workflow.clob, RegisterAppWithFacebookParams.class);
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_FACEBOOK);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, true, workflow);
+
         if(callBack == null) {
-            return execRegisterAppWithGoogle(context, googleId, googleEmail, googleDisplayName, googleAT);
+            return execRegisterAppWithFacebook(opContext, params);
         } else {
-            RegisterAppWithGoogleTask registerAppWithGoogleTask = new RegisterAppWithGoogleTask(context, callBack, googleId, googleEmail, googleDisplayName, googleAT);
+            RegisterAppWithFacebookTask registerAppTask = new RegisterAppWithFacebookTask(opContext, params);
+            registerAppTask.execute();
+            return null;
+        }
+    }
+
+    @Override
+    public RegistrationOperationResult registerAppWithGoogle(Context context, ApiCallBack callBack, RegisterAppWithGoogleParams params) throws Exception {
+        params.appId = appIdentity.getAppId();
+        Workflow workflow = new Workflow(WF_REGISTER_APP_GOOGLE, null, null);
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_GOOGLE);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, false, workflow);
+
+
+        if(callBack == null) {
+            return execRegisterAppWithGoogle(opContext, params);
+        } else {
+            RegisterAppWithGoogleTask registerAppWithGoogleTask = new RegisterAppWithGoogleTask(opContext, params);
             registerAppWithGoogleTask.execute();
+            return null;
+        }
+    }
+
+    @Override
+    public RegistrationOperationResult resumeRegisterAppWithGoogle(Context context, ApiCallBack callBack, Workflow workflow) {
+
+        if(workflow == null) {
+            WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
+            workflow = workflowDao.find(WF_REGISTER_APP_GOOGLE);
+        }
+
+        RegisterAppWithGoogleParams params = apiObjectFactory.getGson().fromJson(workflow.clob, RegisterAppWithGoogleParams.class);
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_GOOGLE);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, true, workflow);
+
+        if(callBack == null) {
+            return execRegisterAppWithGoogle(opContext, params);
+        } else {
+            RegisterAppWithGoogleTask registerAppTask = new RegisterAppWithGoogleTask(opContext, params);
+            registerAppTask.execute();
             return null;
         }
     }
@@ -152,123 +301,192 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @NonNull
-    private RegistrationOperationResult execRegisterUser(Context context, String userName, String email, String displayName, String password) {
+    private RegistrationOperationResult execRegisterUser(OperationContext opContext, RegisterUserParams registerUserParams) {
         RegistrationOperationResult result = new RegistrationOperationResult();
-
-        LogContext logContext = new LogContext("Auth", "RegUser");
+        Workflow workflow = opContext.workflow;
 
         try {
-            if(registerWithGcm(context, result)) {
-                AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerUserAndApp(userName, email, displayName, password, appIdentity.getAppId(), result.gcmId);
-
-                if(result.isUserAuthenticated()) {
-                    AppIdentity oldAppIdentity = appIdentity;
-                    appIdentity = updateAuthenticationData(result);
-                    for (AuthEventHandler authEventHandler : eventHandlers) {
-                        authEventHandler.onRegisterUser(context, oldAppIdentity, appIdentity);
-                    }
+            if(!opContext.skipStep(RegisterUserState.REGISTERED_WITH_GSM)) {
+                if (!registerWithGcm(opContext.context, result)) {
+                    throw new Exception("Unable to register with GCM");
+                } else {
+                    registerUserParams.gcmId = result.gcmId;
+                    workflow.state = RegisterUserState.REGISTERED_WITH_GSM;
                 }
-            } else {
-                throw new Exception("Unable to register with GCM");
             }
+
+            if(!opContext.skipStep(RegisterUserState.REGISTERED_USER)) {
+                AuthApi authApi = new AuthApi(opContext.context, opContext.logContext, apiObjectFactory, authParams);
+                result.authResult = authApi.registerUserAndApp(registerUserParams);
+
+                if (result.isUserAuthenticated()) {
+                    appIdentity = updateAuthenticationData(result);
+                    workflow.state = RegisterUserState.REGISTERED_USER;
+                } else {
+                    throw new Exception("Unable to register user");
+                }
+            }
+
+            if(!opContext.skipStep(RegisterUserState.INVOKED_EVENT_HANDLERS)) {
+                for (AuthEventHandler authEventHandler : eventHandlers) {
+                    authEventHandler.onRegisterUser(opContext, appIdentity);
+                }
+                workflow.state = RegisterUserState.INVOKED_EVENT_HANDLERS;
+            }
+
+
         } catch (Exception e) {
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
-            logContext.addLog(BalloLog.LVL_ERROR, errMsg);
+            opContext.logContext.addLog(BalloLog.LVL_ERROR, errMsg);
             Log.e(getClass().getSimpleName(), errMsg);
         }
 
-        saveLogs(logContext);
+        saveLogs(opContext.logContext);
+
+        opContext.workflow.clob = apiObjectFactory.getGson().toJson(registerUserParams);
+        saveWorkflow(opContext.workflow);
 
         return result;
     }
 
     @NonNull
-    private RegistrationOperationResult execRegisterApp(Context context, String userName, String password) {
+    private RegistrationOperationResult execRegisterApp(OperationContext opContext, RegisterAppParams registerAppParams) {
         RegistrationOperationResult result = new RegistrationOperationResult();
-
-        LogContext logContext = new LogContext("Auth", "RegApp");
+        Workflow workflow = opContext.workflow;
 
         try {
-            if(registerWithGcm(context, result)) {
-                AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerApp(userName, password, appIdentity.getAppId(), result.gcmId);
-
-                if(result.isUserAuthenticated()) {
-                    AppIdentity oldAppIdentity = appIdentity;
-                    appIdentity = updateAuthenticationData(result);
-                    for (AuthEventHandler authEventHandler : eventHandlers) {
-                        authEventHandler.onRegisterApp(context, oldAppIdentity, appIdentity);
-                    }
+            if(!opContext.skipStep(RegisterAppState.REGISTERED_WITH_GSM)) {
+                if (!registerWithGcm(opContext.context, result)) {
+                    throw new Exception("Unable to register with GCM");
+                } else {
+                    registerAppParams.gcmId = result.gcmId;
+                    workflow.state = RegisterAppState.REGISTERED_WITH_GSM;
                 }
             }
+
+            if(!opContext.skipStep(RegisterAppState.REGISTERED_APP)) {
+                AuthApi authApi = new AuthApi(opContext.context, opContext.logContext, apiObjectFactory, authParams);
+                result.authResult = authApi.registerApp(registerAppParams);
+
+                if (result.isUserAuthenticated()) {
+                    appIdentity = updateAuthenticationData(result);
+                    workflow.state = RegisterAppState.REGISTERED_APP;
+                } else {
+                    throw new Exception("Unable to register user");
+                }
+            }
+
+            if(!opContext.skipStep(RegisterAppState.INVOKED_EVENT_HANDLERS)) {
+                for (AuthEventHandler authEventHandler : eventHandlers) {
+                    authEventHandler.onRegisterApp(opContext, appIdentity);
+                }
+                workflow.state = RegisterAppState.INVOKED_EVENT_HANDLERS;
+            }
+
         } catch (Exception e) {
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
-            logContext.addLog(BalloLog.LVL_ERROR, errMsg);
+            opContext.logContext.addLog(BalloLog.LVL_ERROR, errMsg);
             Log.e(getClass().getSimpleName(), errMsg);
         }
 
-        saveLogs(logContext);
+        saveLogs(opContext.logContext);
+
+        opContext.workflow.clob = apiObjectFactory.getGson().toJson(registerAppParams);
+        saveWorkflow(opContext.workflow);
 
         return result;
     }
 
     @NonNull
-    private RegistrationOperationResult execRegisterAppWithFacebook(Context context, String facebookId, String facebookEmail, String facebookDisplayName, String facebookAT) {
+    private RegistrationOperationResult execRegisterAppWithFacebook(OperationContext opContext, RegisterAppWithFacebookParams params) {
         RegistrationOperationResult result = new RegistrationOperationResult();
-
-        LogContext logContext = new LogContext("Auth", "RegAppWithFB");
+        Workflow workflow = opContext.workflow;
 
         try {
-            if(registerWithGcm(context, result)) {
-                AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerAppWithFacebook(facebookId, facebookEmail, facebookDisplayName, facebookAT, appIdentity.getAppId(), result.gcmId);
-
-                if(result.isUserAuthenticated()) {
-                    AppIdentity oldAppIdentity = appIdentity;
-                    appIdentity = updateAuthenticationData(result);
-                    for (AuthEventHandler authEventHandler : eventHandlers) {
-                        authEventHandler.onRegisterApp(context, oldAppIdentity, appIdentity);
-                    }
+            if(!opContext.skipStep(RegisterAppFacebookState.REGISTERED_WITH_GSM)) {
+                if (!registerWithGcm(opContext.context, result)) {
+                    throw new Exception("Unable to register with GCM");
+                } else {
+                    params.gcmId = result.gcmId;
+                    workflow.state = RegisterAppFacebookState.REGISTERED_WITH_GSM;
                 }
+            }
+
+            if(!opContext.skipStep(RegisterAppFacebookState.REGISTERED_APP)) {
+                AuthApi authApi = new AuthApi(opContext.context, opContext.logContext, apiObjectFactory, authParams);
+                result.authResult = authApi.registerAppWithFacebook(params);
+
+                if (result.isUserAuthenticated()) {
+                    appIdentity = updateAuthenticationData(result);
+                    workflow.state = RegisterAppFacebookState.REGISTERED_APP;
+                } else {
+                    throw new Exception("Unable to register user");
+                }
+            }
+
+            if(!opContext.skipStep(RegisterAppFacebookState.INVOKED_EVENT_HANDLERS)) {
+                for (AuthEventHandler authEventHandler : eventHandlers) {
+                    authEventHandler.onRegisterApp(opContext, appIdentity);
+                }
+                workflow.state = RegisterAppFacebookState.INVOKED_EVENT_HANDLERS;
             }
         } catch (Exception e) {
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
-            logContext.addLog(BalloLog.LVL_ERROR, errMsg);
+            opContext.logContext.addLog(BalloLog.LVL_ERROR, errMsg);
             Log.e(getClass().getSimpleName(), errMsg);
         }
 
-        saveLogs(logContext);
+        saveLogs(opContext.logContext);
+
+        opContext.workflow.clob = apiObjectFactory.getGson().toJson(params);
+        saveWorkflow(opContext.workflow);
 
         return result;
     }
 
     @NonNull
-    private RegistrationOperationResult execRegisterAppWithGoogle(Context context, String googleId, String googleEmail, String googleDisplayName, String googleAT) {
+    private RegistrationOperationResult execRegisterAppWithGoogle(OperationContext opContext, RegisterAppWithGoogleParams params) {
         RegistrationOperationResult result = new RegistrationOperationResult();
-
-        LogContext logContext = new LogContext("Auth", "RegAppWithGoogle");
+        Workflow workflow = opContext.workflow;
 
         try {
-            if(registerWithGcm(context, result)) {
-                AuthApi authApi = new AuthApi(context, logContext, apiObjectFactory, authParams);
-                result.authResult = authApi.registerAppWithGoogle(googleId, googleEmail, googleDisplayName, googleAT, appIdentity.getAppId(), result.gcmId);
-
-                if(result.isUserAuthenticated()) {
-                    AppIdentity oldAppIdentity = appIdentity;
-                    appIdentity = updateAuthenticationData(result);
-                    for (AuthEventHandler authEventHandler : eventHandlers) {
-                        authEventHandler.onRegisterApp(context, oldAppIdentity, appIdentity);
-                    }
+            if(!opContext.skipStep(RegisterAppGoogleState.REGISTERED_WITH_GSM)) {
+                if (!registerWithGcm(opContext.context, result)) {
+                    throw new Exception("Unable to register with GCM");
+                } else {
+                    params.gcmId = result.gcmId;
+                    workflow.state = RegisterAppGoogleState.REGISTERED_WITH_GSM;
                 }
+            }
+
+            if(!opContext.skipStep(RegisterAppGoogleState.REGISTERED_APP)) {
+                AuthApi authApi = new AuthApi(opContext.context, opContext.logContext, apiObjectFactory, authParams);
+                result.authResult = authApi.registerAppWithGoogle(params);
+
+                if (result.isUserAuthenticated()) {
+                    appIdentity = updateAuthenticationData(result);
+                    workflow.state = RegisterAppGoogleState.REGISTERED_APP;
+                } else {
+                    throw new Exception("Unable to register user");
+                }
+            }
+
+            if(!opContext.skipStep(RegisterAppGoogleState.INVOKED_EVENT_HANDLERS)) {
+                for (AuthEventHandler authEventHandler : eventHandlers) {
+                    authEventHandler.onRegisterApp(opContext, appIdentity);
+                }
+                workflow.state = RegisterAppGoogleState.INVOKED_EVENT_HANDLERS;
             }
         } catch (Exception e) {
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
-            logContext.addLog(BalloLog.LVL_ERROR, errMsg);
+            opContext.logContext.addLog(BalloLog.LVL_ERROR, errMsg);
             Log.e(getClass().getSimpleName(), errMsg);
         }
 
-        saveLogs(logContext);
+        saveLogs(opContext.logContext);
+
+        opContext.workflow.clob = apiObjectFactory.getGson().toJson(params);
+        saveWorkflow(opContext.workflow);
 
         return result;
     }
@@ -339,20 +557,25 @@ public class DefaultAuthFacade implements AuthFacade {
         }
     }
 
+    private void saveWorkflow(Workflow workflow) {
+        if(workflow != null) {
+            WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
+            workflowDao.save(workflow);
+        }
+    }
+
     private abstract class RegistrationTask extends AsyncTask<Void, Void, RegistrationOperationResult> {
         protected ProgressDialog dlg;
 
-        protected Context context;
-        protected ApiCallBack callBack;
+        protected OperationContext opContext;
 
-        public RegistrationTask(Context context, ApiCallBack callBack) {
-            this.context = context;
-            this.callBack = callBack;
+        public RegistrationTask(OperationContext opContext) {
+            this.opContext = opContext;
         }
 
         @Override
         protected void onPreExecute() {
-            dlg = new ProgressDialog(context);
+            dlg = new ProgressDialog(opContext.context);
             dlg.setMessage("Please wait ...");
             dlg.show();
         }
@@ -363,89 +586,65 @@ public class DefaultAuthFacade implements AuthFacade {
                 dlg.dismiss();
             }
 
-            if(callBack != null) {
-                callBack.onPostExecute(result);
+            if(opContext.callBack != null) {
+                opContext.callBack.onPostExecute(result);
             }
         }
     }
 
     private class RegisterUserTask extends RegistrationTask {
-        private String userName;
-        private String email;
-        private String displayName;
-        private String password;
+        RegisterUserParams registerUserParams;
 
-        public RegisterUserTask(Context context, ApiCallBack callBack, String userName, String email, String displayName, String password) {
-            super(context, callBack);
-
-            this.userName = userName;
-            this.email = email;
-            this.displayName = displayName;
-            this.password = password;
+        public RegisterUserTask(OperationContext opContext, RegisterUserParams registerUserParams) {
+            super(opContext);
+            this.registerUserParams = registerUserParams;
         }
 
         @Override
         protected RegistrationOperationResult doInBackground(Void... params) {
-            return execRegisterUser(context, userName, email, displayName, password);
+            return execRegisterUser(opContext, registerUserParams);
         }
     }
 
     private class RegisterAppTask extends RegistrationTask {
-        private String userName;
-        private String password;
+        RegisterAppParams registerAppParams;
 
-        public RegisterAppTask(Context context, ApiCallBack callBack, String userName, String password) {
-            super(context, callBack);
-
-            this.userName = userName;
-            this.password = password;
+        public RegisterAppTask(OperationContext opContext, RegisterAppParams registerAppParams) {
+            super(opContext);
+            this.registerAppParams = registerAppParams;
         }
 
         @Override
         protected RegistrationOperationResult doInBackground(Void... params) {
-            return execRegisterApp(context, userName, password);
+            return execRegisterApp(opContext, registerAppParams);
         }
     }
 
     private class RegisterAppWithFacebookTask extends RegistrationTask {
-        private String facebookId;
-        private String facebookEmail;
-        private String facebookDisplayName;
-        private String facebookAT;
+        RegisterAppWithFacebookParams registerAppFacebookParams;
 
-        public RegisterAppWithFacebookTask(Context context, ApiCallBack callBack, String facebookId, String facebookEmail, String facebookDisplayName, String facebookAT) {
-            super(context, callBack);
-
-            this.facebookId = facebookId;
-            this.facebookEmail = facebookEmail;
-            this.facebookDisplayName = facebookDisplayName;
-            this.facebookAT = facebookAT;
+        public RegisterAppWithFacebookTask(OperationContext opContext, RegisterAppWithFacebookParams registerAppFacebookParams) {
+            super(opContext);
+            this.registerAppFacebookParams = registerAppFacebookParams;
         }
 
         @Override
         protected RegistrationOperationResult doInBackground(Void... params) {
-            return execRegisterAppWithFacebook(context, facebookId, facebookEmail, facebookDisplayName, facebookAT);
+            return execRegisterAppWithFacebook(opContext, registerAppFacebookParams);
         }
     }
 
     private class RegisterAppWithGoogleTask extends RegistrationTask {
-        private String googleId;
-        private String googleEmail;
-        private String googleDisplayName;
-        private String googleAT;
+        RegisterAppWithGoogleParams registerAppGoogleParams;
 
-        public RegisterAppWithGoogleTask(Context context, ApiCallBack callBack, String googleId, String googleEmail, String googleDisplayName, String googleAT) {
-            super(context, callBack);
-
-            this.googleId = googleId;
-            this.googleEmail = googleEmail;
-            this.googleDisplayName = googleDisplayName;
-            this.googleAT = googleAT;
+        public RegisterAppWithGoogleTask(OperationContext opContext, RegisterAppWithGoogleParams registerAppGoogleParams) {
+            super(opContext);
+            this.registerAppGoogleParams = registerAppGoogleParams;
         }
 
         @Override
         protected RegistrationOperationResult doInBackground(Void... params) {
-            return execRegisterAppWithGoogle(context, googleId, googleEmail, googleDisplayName, googleAT);
+            return execRegisterAppWithGoogle(opContext, registerAppGoogleParams);
         }
     }
 }

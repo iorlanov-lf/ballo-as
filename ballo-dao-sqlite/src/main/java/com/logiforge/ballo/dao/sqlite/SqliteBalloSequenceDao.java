@@ -25,6 +25,11 @@ public class SqliteBalloSequenceDao extends SqliteDao implements BalloSequenceDa
 	}
 
 	@Override
+	protected String getTableName() {
+		return TABLE_NAME;
+	}
+
+	@Override
 	public void init() {
 		if(!tableExists(TABLE_NAME)) {
 		    db.execSQL(CREATE_STATEMENT);

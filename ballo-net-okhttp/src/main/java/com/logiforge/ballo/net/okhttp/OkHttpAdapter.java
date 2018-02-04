@@ -68,9 +68,11 @@ public class OkHttpAdapter implements HttpAdapter {
             throw new IOException("Unexpected code " + response);
         } else {
             String contentType = okhttpResponse.header("Content-Type");
-            if(contentType.equals("application/json; charset=UTF-8")) {
+            if(contentType == null) {
+                throw new IOException("Unknown content type: NULL");
+            } else if(contentType.equalsIgnoreCase("application/json;charset=UTF-8")) {
                 response = new Response(okhttpResponse.body().string());
-            } else if(contentType.equals("application/octet-stream")) {
+            } else if(contentType.equalsIgnoreCase("application/octet-stream")) {
                 response = new Response(okhttpResponse.body().byteStream());
             } else {
                 throw new IOException("Unknown content type: " + contentType);

@@ -8,15 +8,15 @@ public interface BalloLogDao extends Dao {
 
 	void init();
 	
-	public void log(String level, String job, String tag, String message);
+	void log(String level, String job, String tag, String message);
 	
-	public void log(BalloLog log);
+	void log(BalloLog log);
 
-    public void log(List<BalloLog> logEntries);
+    void log(List<BalloLog> logEntries);
 	
-	public List<BalloLog> getLog();
+	List<BalloLog> getLog();
 	
-	public void deleteLog(Long id);
+	void deleteLog(Long id);
 
-	public void deleteAll();
+	void deleteAll();
 }

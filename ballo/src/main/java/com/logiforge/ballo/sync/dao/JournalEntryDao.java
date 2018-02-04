@@ -28,9 +28,9 @@ public interface JournalEntryDao extends Dao {
 	void deleteOrUpdateVersionAndOp(String id, Integer updateCounter, Long version);
 	
 	void deleteTxn(Long txnId);
-	
+
 	void deleteAll();
-	
+
 	void deleteByIds(List<Long> ids);
 	
 	void deleteById(Long id);

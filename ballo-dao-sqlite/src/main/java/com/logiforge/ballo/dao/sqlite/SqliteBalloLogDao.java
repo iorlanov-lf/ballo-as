@@ -39,6 +39,11 @@ public class SqliteBalloLogDao extends SqliteDao implements BalloLogDao {
 	protected SqliteBalloLogDao(SQLiteDatabase database) {
 		super(database);
 	}
+
+	@Override
+	protected String getTableName() {
+		return TABLE_NAME;
+	}
 	
 	public void init() {
 		if (!tableExists(TABLE_NAME)) {
@@ -105,9 +110,5 @@ public class SqliteBalloLogDao extends SqliteDao implements BalloLogDao {
 	
 	public void deleteLog(Long id) {
 		db.delete(TABLE_NAME, "ID=?", new String[] {id.toString()});
-	}
-
-	public void deleteAll() {
-		db.delete(TABLE_NAME, null, null);
 	}
 }

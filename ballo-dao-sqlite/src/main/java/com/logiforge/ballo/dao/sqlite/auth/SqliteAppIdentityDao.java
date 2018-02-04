@@ -37,6 +37,11 @@ public class SqliteAppIdentityDao extends SqliteDao implements AppIdentityDao {
 	}
 
 	@Override
+	protected String getTableName() {
+		return TABLE_NAME;
+	}
+
+	@Override
 	public void init() {
 		if(!tableExists(TABLE_NAME)) {
 		    db.execSQL(CREATE_STATEMENT);
