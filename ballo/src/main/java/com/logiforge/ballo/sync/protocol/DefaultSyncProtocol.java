@@ -13,9 +13,10 @@ import java.util.Map;
  */
 
 public abstract class DefaultSyncProtocol implements SyncProtocol {
-    protected Map<String, SyncEntityConverter> syncEntityConverters = new HashMap<>();
+    //protected Map<String, SyncEntityConverter> syncEntityConverters = new HashMap<>();
     protected Map<String, SyncEntityDaoFacade> syncEntityDaoFacades = new HashMap<>();
 
+    /*
     @Override
     public SyncEntityConverter getSyncEntityConverter(Class clazz) {
         return syncEntityConverters.get(clazz.getSimpleName());
@@ -25,6 +26,7 @@ public abstract class DefaultSyncProtocol implements SyncProtocol {
     public SyncEntityConverter getSyncEntityConverter(String className) {
         return syncEntityConverters.get(className);
     }
+    */
 
     @Override
     public SyncEntityDaoFacade getSyncEntityDaoFacade(Class clazz) {

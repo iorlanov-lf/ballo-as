@@ -16,6 +16,11 @@ import com.logiforge.ballo.net.PostRequest;
  */
 
 public interface AuthFacade {
+    String WF_REGISTER_USER = "RegisterUser";
+    String WF_REGISTER_APP = "RegisterApp";
+    String WF_REGISTER_APP_FACEBOOK = "RegisterAppFacebook";
+    String WF_REGISTER_APP_GOOGLE = "RegisterAppGoogle";
+
     void init() throws Exception;
     String getAppId();
 

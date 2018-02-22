@@ -44,10 +44,7 @@ import java.util.UUID;
 
 public class DefaultAuthFacade implements AuthFacade {
     static final String TAG = AuthFacade.class.getSimpleName();
-    public static final String WF_REGISTER_USER = "RegisterUser";
-    public static final String WF_REGISTER_APP = "RegisterApp";
-    public static final String WF_REGISTER_APP_FACEBOOK = "RegisterAppFacebook";
-    public static final String WF_REGISTER_APP_GOOGLE = "RegisterAppGoogle";
+
     public static final String LJ_AUTH = "Auth";
     public static final String LT_REG_USER = "RegUser";
     public static final String LT_REG_APP = "RegApp";

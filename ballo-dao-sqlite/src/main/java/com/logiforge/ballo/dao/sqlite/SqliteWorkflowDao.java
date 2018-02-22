@@ -60,8 +60,8 @@ public class SqliteWorkflowDao extends SqliteDao implements WorkflowDao {
         values.put(COL_CLOB, workflow.clob);
         db.insert(TABLE_NAME, null, values);
 
-        if(workflow.childWorkflows != null) {
-            for (Workflow childWorkflow : workflow.childWorkflows) {
+        if(workflow.getChildWorkflows() != null) {
+            for (Workflow childWorkflow : workflow.getChildWorkflows()) {
                 ContentValues childValues = new ContentValues();
                 childValues.put(COL_NAME, childWorkflow.name);
                 childValues.put(COL_STATE, childWorkflow.state);
@@ -96,14 +96,13 @@ public class SqliteWorkflowDao extends SqliteDao implements WorkflowDao {
             c = db.query(TABLE_NAME, null, COL_PARENT_NAME+"=?", new String[]{name}, null, null, null);
 
             if (c.moveToFirst()) {
-                workflow.childWorkflows = new ArrayList<>();
                 do {
                     Workflow childWorkflow = new Workflow(
                             getString(COL_NAME, c),
                             getInt(COL_STATE, c),
                             getString(COL_CLOB, c)
                     );
-                    workflow.childWorkflows.add(childWorkflow);
+                    workflow.addChildWorkflow(childWorkflow);
                 } while (c.moveToNext());
             }
             if (c != null && !c.isClosed()) {

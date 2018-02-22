@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import com.logiforge.ballo.sync.dao.SyncEntityDao;
 import com.logiforge.ballo.sync.protocol.SyncProtocol;
+import com.logiforge.ballo.sync.protocol.conversion.ConverterFactory;
 
 /**
  * Created by iorlanov on 11/22/17.
@@ -206,13 +207,13 @@ public abstract class DefaultSyncEntityDaoFacade implements SyncEntityDaoFacade 
     }
 
     private void journalOnCreated(DbTransaction txn, SyncEntity entity, String syncParentId, Long syncParentVersion) throws Exception {
-        byte[] entityAsBytes = syncProtocol.getSyncEntityConverter(this.getEntityClassName()).toBytes(entity);
+        byte[] entityAsBytes = ConverterFactory.getSyncEntityConverter(this.getEntityClassName()).toBytes(entity);
         JournalEntryDao journalDao = Ballo.db().getDao(JournalEntry.class);
         journalDao.onEntityCreated(txn, entity, entityAsBytes, this.getSyncParentEntityClassName(), syncParentId, syncParentVersion);
     }
 
     private void journalOnUpdated(DbTransaction txn, SyncEntity entity, String syncParentId, Long syncParentVersion) throws Exception {
-        byte[] entityAsBytes = syncProtocol.getSyncEntityConverter(this.getEntityClassName()).changesToBytes(entity.changes);
+        byte[] entityAsBytes = ConverterFactory.getSyncEntityConverter(this.getEntityClassName()).changesToBytes(entity.changes);
         JournalEntryDao journalDao = Ballo.db().getDao(JournalEntry.class);
         journalDao.onEntityUpdated(txn, entity, entityAsBytes, this.getSyncParentEntityClassName(), syncParentId, syncParentVersion);
     }

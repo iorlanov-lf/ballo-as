@@ -1,5 +1,6 @@
 package com.logiforge.ballo.model.db;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -8,13 +9,43 @@ import java.util.List;
 
 public class Workflow {
     public String name;
-    public Integer state;
+    public Integer state = Integer.MIN_VALUE;
     public String clob;
-    public List<Workflow> childWorkflows;
+    List<Workflow> childWorkflows;
 
     public Workflow(String name, Integer state, String clob) {
         this.name = name;
         this.state = state;
         this.clob = clob;
+    }
+
+    public List<Workflow> getChildWorkflows() {
+        return childWorkflows;
+    }
+
+    public void addChildWorkflow(Workflow workflow) {
+        if(childWorkflows == null) {
+            childWorkflows = new ArrayList<>();
+        }
+
+        childWorkflows.add(workflow);
+    }
+
+    public Workflow findChildWorkflow(String name) {
+        if(childWorkflows == null) {
+            return null;
+        } else {
+            for(Workflow workflow : childWorkflows) {
+                if(workflow.name.equals(name)) {
+                    return workflow;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public boolean skipStep(boolean resume, int state) {
+        return resume && this.state > state;
     }
 }

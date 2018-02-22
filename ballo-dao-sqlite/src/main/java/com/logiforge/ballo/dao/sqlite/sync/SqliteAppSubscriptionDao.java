@@ -78,4 +78,11 @@ public class SqliteAppSubscriptionDao extends SqliteDao implements AppSubscripti
 
         return subscriptions;
     }
+
+    public void updateVisibleVersion(String entityId, Long visibleVersion) {
+        ContentValues values = new ContentValues();
+        values.put(COL_VISIBLE_VERSION, visibleVersion);
+
+        db.update(TABLE_NAME, values, COL_ENTITY_ID+"=?", new String[]{entityId});
+    }
 }

@@ -16,4 +16,11 @@ public class RegisterAppParams {
         this.appId = appId;
         this.gcmId = gcmId;
     }
+
+    public RegisterAppParams(String userName, String password) {
+        this.userName = userName;
+        this.password = password;
+        this.appId = null;
+        this.gcmId = null;
+    }
 }

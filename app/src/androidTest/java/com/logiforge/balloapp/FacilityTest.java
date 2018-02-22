@@ -10,6 +10,7 @@ import com.logiforge.ballo.sync.dao.JournalEntryDao;
 import com.logiforge.ballo.sync.dao.SyncEntityDao;
 import com.logiforge.ballo.sync.model.db.JournalEntry;
 import com.logiforge.ballo.sync.model.db.SyncEntity;
+import com.logiforge.ballo.sync.protocol.conversion.ConverterFactory;
 import com.logiforge.ballo.sync.protocol.conversion.SyncEntityConverter;
 import com.logiforge.ballo.sync.protocol.dao_facade.DefaultTransactionFacade;
 import com.logiforge.ballo.sync.protocol.dao_facade.SyncEntityDaoFacade;
@@ -64,7 +65,7 @@ public class FacilityTest {
 
             JournalEntry journalEntry = journalEntries.get(0);
             byte[] blobData = journalDao.getBlobData(journalEntry.id);
-            SyncEntityConverter facilityConverter = Ballo.syncFacade().syncProtocol().getSyncEntityConverter(Facility.class);
+            SyncEntityConverter facilityConverter = ConverterFactory.getSyncEntityConverter(Facility.class);
             Facility unpackedFacility = (Facility) facilityConverter.fromBytes(blobData);
             assertNotNull(unpackedFacility);
 
@@ -106,7 +107,7 @@ public class FacilityTest {
 
             JournalEntry journalEntry = journalEntries.get(1);
             byte[] blobData = journalDao.getBlobData(journalEntry.id);
-            SyncEntityConverter facilityConverter = Ballo.syncFacade().syncProtocol().getSyncEntityConverter(Facility.class);
+            SyncEntityConverter facilityConverter = ConverterFactory.getSyncEntityConverter(Facility.class);
             Map<Integer, SyncEntity.ValuePair> unpackedChanges = facilityConverter.changesFromBytes(blobData);
             assertNotNull(unpackedChanges);
 

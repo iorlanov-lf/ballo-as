@@ -24,6 +24,7 @@ import com.logiforge.ballo.sync.facade.SyncAuthEventHandler;
 import com.logiforge.ballo.sync.facade.SyncFacade;
 import com.logiforge.ballo.sync.protocol.DefaultSyncProtocol;
 import com.logiforge.ballo.sync.protocol.SyncProtocol;
+import com.logiforge.ballo.sync.protocol.conversion.ConverterFactory;
 import com.logiforge.balloapp.dao.BalloAppDbAdapter;
 import com.logiforge.balloapp.model.db.Facility;
 import com.logiforge.balloapp.model.db.PostalCode;
@@ -93,16 +94,16 @@ public class BalloInitializer {
 
             @Override
             public void init() {
-                this.syncEntityConverters.put(Facility.class.getSimpleName(), new FacilityConverter());
                 this.syncEntityDaoFacades.put(Facility.class.getSimpleName(), new FacilityDaoFacade(this));
+                ConverterFactory.registerSyncEntityConverter(Facility.class.getSimpleName(), new FacilityConverter());
 
-                this.syncEntityConverters.put(PostalCodeFacilities.class.getSimpleName(), new PostalCodeFacilitiesConverter());
+                ConverterFactory.registerSyncEntityConverter(PostalCodeFacilities.class.getSimpleName(), new PostalCodeFacilitiesConverter());
                 this.syncEntityDaoFacades.put(PostalCodeFacilities.class.getSimpleName(), new PostalCodeFacilitiesDaoFacade(this));
 
-                this.syncEntityConverters.put(PostalCode.class.getSimpleName(), new PostalCodeConverter());
+                ConverterFactory.registerSyncEntityConverter(PostalCode.class.getSimpleName(), new PostalCodeConverter());
                 this.syncEntityDaoFacades.put(PostalCode.class.getSimpleName(), new PostalCodeDaoFacade(this));
 
-                this.syncEntityConverters.put(PostalCodes.class.getSimpleName(), new PostalCodesConverter());
+                ConverterFactory.registerSyncEntityConverter(PostalCodes.class.getSimpleName(), new PostalCodesConverter());
                 this.syncEntityDaoFacades.put(PostalCodes.class.getSimpleName(), new PostalCodesDaoFacade(this));
             }
         };

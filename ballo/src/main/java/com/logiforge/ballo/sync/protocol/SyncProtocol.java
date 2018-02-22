@@ -12,8 +12,8 @@ import java.util.Map;
 
 public interface SyncProtocol {
     void init();
-    SyncEntityConverter getSyncEntityConverter(Class clazz);
-    SyncEntityConverter getSyncEntityConverter(String className);
+    //SyncEntityConverter getSyncEntityConverter(Class clazz);
+    //SyncEntityConverter getSyncEntityConverter(String className);
     SyncEntityDaoFacade getSyncEntityDaoFacade(Class clazz);
     SyncEntityDaoFacade getSyncEntityDaoFacade(String className);
 }

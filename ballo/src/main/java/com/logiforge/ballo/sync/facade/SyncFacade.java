@@ -2,6 +2,7 @@ package com.logiforge.ballo.sync.facade;
 
 import android.content.Context;
 
+import com.logiforge.ballo.Ballo;
 import com.logiforge.ballo.api.ApiObjectFactory;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
 import com.logiforge.ballo.dao.DbTransaction;
@@ -12,10 +13,15 @@ import com.logiforge.ballo.sync.api.SyncApiParams;
 import com.logiforge.ballo.sync.dao.AppSubscriptionDao;
 import com.logiforge.ballo.sync.dao.JournalEntryDao;
 import com.logiforge.ballo.sync.dao.SyncDaoInitializer;
+import com.logiforge.ballo.sync.dao.SyncEntityDao;
 import com.logiforge.ballo.sync.model.api.AuthenticatedCallResponse;
+import com.logiforge.ballo.sync.model.api.DataSlice;
+import com.logiforge.ballo.sync.model.api.SubscriptionRequest;
 import com.logiforge.ballo.sync.model.db.AppSubscription;
 import com.logiforge.ballo.sync.model.db.JournalEntry;
+import com.logiforge.ballo.sync.model.db.SyncEntity;
 import com.logiforge.ballo.sync.protocol.SyncProtocol;
+import com.logiforge.ballo.sync.protocol.dao_facade.SyncEntityDaoFacade;
 
 import java.util.List;
 
@@ -90,6 +96,41 @@ public class SyncFacade {
             return appSubscriptions;
         } else {
             return null;
+        }
+    }
+
+    public void downloadSubscriptionData(Context context, LogContext logContext) throws Exception {
+        SyncApi syncApi = new SyncApi(context, logContext, apiObjectFactory, syncApiParams);
+
+        AppSubscriptionDao appSubscriptionDao = Ballo.db().getDao(AppSubscription.class);
+        List<AppSubscription> appSubscriptions = appSubscriptionDao.getAllSubscriptions();
+
+        DbTransaction txn = db().beginSyncTxn();
+        try {
+            for(AppSubscription appSubscription : appSubscriptions) {
+                AuthenticatedCallResponse<DataSlice> resp = syncApi.getSubscriptionData(
+                        new SubscriptionRequest(appSubscription.entityClassName, appSubscription.entityId));
+
+                DataSlice dataSlice = resp.workload;
+                if(dataSlice != null) {
+                    SyncEntityDaoFacade daoFacade = syncProtocol.getSyncEntityDaoFacade(dataSlice.rootEntity.getClass());
+                    daoFacade.add(txn, dataSlice.rootEntity);
+
+                    if(dataSlice.childEntities != null) {
+                        for(SyncEntity childEntity : dataSlice.childEntities) {
+                            daoFacade = syncProtocol.getSyncEntityDaoFacade(childEntity.getClass());
+                            daoFacade.add(txn, childEntity);
+                        }
+                    }
+                }
+
+                appSubscriptionDao.updateVisibleVersion(appSubscription.entityId, dataSlice.rootEntity.version);
+            }
+            db().commitTxn(txn);
+        } catch (Exception e) {
+            logContext.addLog(BalloLog.LVL_ERROR, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+        } finally {
+            db().endTxn(txn);
         }
     }
 }
