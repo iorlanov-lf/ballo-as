@@ -107,15 +107,22 @@ public class DefaultAuthFacade implements AuthFacade {
 
     @Override
     public RegistrationOperationResult registerUser(Context context, ApiCallBack callBack,
-                                                    RegisterUserParams registerUserParams) throws Exception {
+                                                    RegisterUserParams registerUserParams,
+                                                    Workflow parentWorkflow) throws Exception {
         registerUserParams.appId = appIdentity.getAppId();
-        Workflow workflow = new Workflow(WF_REGISTER_USER, null, null);
+
+        Workflow authWorkflow = new Workflow(WF_REGISTER_USER);
+        if(parentWorkflow != null) {
+            parentWorkflow.addChildWorkflow(authWorkflow);
+        }
+
         LogContext logContext = new LogContext(LJ_AUTH, LT_REG_USER);
-        OperationContext opContext = new OperationContext(context, logContext, callBack, false, workflow);
+
+        OperationContext opContext = new OperationContext(context, logContext, callBack, false, authWorkflow);
 
         if(callBack == null) {
             RegistrationOperationResult result = execRegisterUser(opContext, registerUserParams);
-            result.workflow = workflow;
+            result.workflow = authWorkflow;
             return result;
         } else {
             RegisterUserTask registerUserTask = new RegisterUserTask(opContext, registerUserParams);
@@ -125,19 +132,28 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @Override
-    public RegistrationOperationResult resumeRegisterUser(Context context, ApiCallBack callBack, Workflow workflow) {
+    public RegistrationOperationResult resumeRegisterUser(Context context, ApiCallBack callBack, Workflow parentWorkflow) {
 
-        if(workflow == null) {
+        Workflow authWorkflow;
+        if(parentWorkflow == null) {
             WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
-            workflow = workflowDao.find(WF_REGISTER_USER);
+            authWorkflow = workflowDao.find(WF_REGISTER_USER);
+        } else {
+            authWorkflow = parentWorkflow.findChildWorkflow(WF_REGISTER_USER);
+            if(authWorkflow == null) {
+                authWorkflow = new Workflow(WF_REGISTER_USER);
+                parentWorkflow.addChildWorkflow(authWorkflow);
+            }
         }
 
-        RegisterUserParams registerUserParams = apiObjectFactory.getGson().fromJson(workflow.clob, RegisterUserParams.class);
+        RegisterUserParams registerUserParams = apiObjectFactory.getGson().fromJson(authWorkflow.clob, RegisterUserParams.class);
         LogContext logContext = new LogContext(LJ_AUTH, LT_REG_USER);
-        OperationContext opContext = new OperationContext(context, logContext, callBack, true, workflow);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, true, authWorkflow);
 
         if(callBack == null) {
-            return execRegisterUser(opContext, registerUserParams);
+            RegistrationOperationResult result = execRegisterUser(opContext, registerUserParams);
+            result.workflow = authWorkflow;
+            return result;
         } else {
             RegisterUserTask registerUserTask = new RegisterUserTask(opContext, registerUserParams);
             registerUserTask.execute();
@@ -146,15 +162,21 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @Override
-    public RegistrationOperationResult registerApp(Context context, ApiCallBack callBack, RegisterAppParams registerAppParams) throws Exception {
+    public RegistrationOperationResult registerApp(
+            Context context, ApiCallBack callBack, RegisterAppParams registerAppParams, Workflow parentWorkflow) throws Exception {
         registerAppParams.appId = appIdentity.getAppId();
-        Workflow workflow = new Workflow(WF_REGISTER_APP, null, null);
+
+        Workflow authWorkflow = new Workflow(WF_REGISTER_APP);
+        if(parentWorkflow != null) {
+            parentWorkflow.addChildWorkflow(authWorkflow);
+        }
+
         LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP);
-        OperationContext opContext = new OperationContext(context, logContext, callBack, false, workflow);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, false, authWorkflow);
 
         if(callBack == null) {
             RegistrationOperationResult result = execRegisterApp(opContext, registerAppParams);
-            result.workflow = workflow;
+            result.workflow = authWorkflow;
             return result;
         } else {
             RegisterAppTask registerAppTask = new RegisterAppTask(opContext, registerAppParams);
@@ -164,19 +186,28 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @Override
-    public RegistrationOperationResult resumeRegisterApp(Context context, ApiCallBack callBack, Workflow workflow) {
+    public RegistrationOperationResult resumeRegisterApp(Context context, ApiCallBack callBack, Workflow parentWorkflow) {
 
-        if(workflow == null) {
+        Workflow authWorkflow;
+        if(parentWorkflow == null) {
             WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
-            workflow = workflowDao.find(WF_REGISTER_APP);
+            authWorkflow = workflowDao.find(WF_REGISTER_APP);
+        } else {
+            authWorkflow = parentWorkflow.findChildWorkflow(WF_REGISTER_APP);
+            if(authWorkflow == null) {
+                authWorkflow = new Workflow(WF_REGISTER_APP);
+                parentWorkflow.addChildWorkflow(authWorkflow);
+            }
         }
 
-        RegisterAppParams registerAppParams = apiObjectFactory.getGson().fromJson(workflow.clob, RegisterAppParams.class);
+        RegisterAppParams registerAppParams = apiObjectFactory.getGson().fromJson(authWorkflow.clob, RegisterAppParams.class);
         LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP);
-        OperationContext opContext = new OperationContext(context, logContext, callBack, true, workflow);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, true, authWorkflow);
 
         if(callBack == null) {
-            return execRegisterApp(opContext, registerAppParams);
+            RegistrationOperationResult result = execRegisterApp(opContext, registerAppParams);
+            result.workflow = authWorkflow;
+            return result;
         } else {
             RegisterAppTask registerAppTask = new RegisterAppTask(opContext, registerAppParams);
             registerAppTask.execute();
@@ -185,14 +216,22 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @Override
-    public RegistrationOperationResult registerAppWithFacebook(Context context, ApiCallBack callBack, RegisterAppWithFacebookParams params) throws Exception {
+    public RegistrationOperationResult registerAppWithFacebook(
+            Context context, ApiCallBack callBack, RegisterAppWithFacebookParams params, Workflow parentWorkflow) throws Exception {
         params.appId = appIdentity.getAppId();
-        Workflow workflow = new Workflow(WF_REGISTER_APP_FACEBOOK, null, null);
+
+        Workflow authWorkflow = new Workflow(WF_REGISTER_APP_FACEBOOK);
+        if(parentWorkflow != null) {
+            parentWorkflow.addChildWorkflow(authWorkflow);
+        }
+
         LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_FACEBOOK);
-        OperationContext opContext = new OperationContext(context, logContext, callBack, false, workflow);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, false, authWorkflow);
 
         if(callBack == null) {
-            return execRegisterAppWithFacebook(opContext, params);
+            RegistrationOperationResult result =  execRegisterAppWithFacebook(opContext, params);
+            result.workflow = authWorkflow;
+            return result;
         } else {
             RegisterAppWithFacebookTask registerAppWithFacebookTask = new RegisterAppWithFacebookTask(opContext, params);
             registerAppWithFacebookTask.execute();
@@ -201,19 +240,28 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @Override
-    public RegistrationOperationResult resumeRegisterAppWithFacebook(Context context, ApiCallBack callBack, Workflow workflow) {
+    public RegistrationOperationResult resumeRegisterAppWithFacebook(Context context, ApiCallBack callBack, Workflow parentWorkflow) {
 
-        if(workflow == null) {
+        Workflow authWorkflow;
+        if(parentWorkflow == null) {
             WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
-            workflow = workflowDao.find(WF_REGISTER_APP_FACEBOOK);
+            authWorkflow = workflowDao.find(WF_REGISTER_APP_FACEBOOK);
+        } else {
+            authWorkflow = parentWorkflow.findChildWorkflow(WF_REGISTER_APP_FACEBOOK);
+            if(authWorkflow == null) {
+                authWorkflow = new Workflow(WF_REGISTER_APP_FACEBOOK);
+                parentWorkflow.addChildWorkflow(authWorkflow);
+            }
         }
 
-        RegisterAppWithFacebookParams params = apiObjectFactory.getGson().fromJson(workflow.clob, RegisterAppWithFacebookParams.class);
+        RegisterAppWithFacebookParams params = apiObjectFactory.getGson().fromJson(authWorkflow.clob, RegisterAppWithFacebookParams.class);
         LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_FACEBOOK);
-        OperationContext opContext = new OperationContext(context, logContext, callBack, true, workflow);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, true, authWorkflow);
 
         if(callBack == null) {
-            return execRegisterAppWithFacebook(opContext, params);
+            RegistrationOperationResult result =  execRegisterAppWithFacebook(opContext, params);
+            result.workflow = authWorkflow;
+            return result;
         } else {
             RegisterAppWithFacebookTask registerAppTask = new RegisterAppWithFacebookTask(opContext, params);
             registerAppTask.execute();
@@ -222,15 +270,22 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @Override
-    public RegistrationOperationResult registerAppWithGoogle(Context context, ApiCallBack callBack, RegisterAppWithGoogleParams params) throws Exception {
+    public RegistrationOperationResult registerAppWithGoogle(
+            Context context, ApiCallBack callBack, RegisterAppWithGoogleParams params, Workflow parentWorkflow) throws Exception {
         params.appId = appIdentity.getAppId();
-        Workflow workflow = new Workflow(WF_REGISTER_APP_GOOGLE, null, null);
-        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_GOOGLE);
-        OperationContext opContext = new OperationContext(context, logContext, callBack, false, workflow);
 
+        Workflow authWorkflow = new Workflow(WF_REGISTER_APP_GOOGLE);
+        if(parentWorkflow != null) {
+            parentWorkflow.addChildWorkflow(authWorkflow);
+        }
+
+        LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_GOOGLE);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, false, authWorkflow);
 
         if(callBack == null) {
-            return execRegisterAppWithGoogle(opContext, params);
+            RegistrationOperationResult result = execRegisterAppWithGoogle(opContext, params);
+            result.workflow = authWorkflow;
+            return result;
         } else {
             RegisterAppWithGoogleTask registerAppWithGoogleTask = new RegisterAppWithGoogleTask(opContext, params);
             registerAppWithGoogleTask.execute();
@@ -239,19 +294,28 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     @Override
-    public RegistrationOperationResult resumeRegisterAppWithGoogle(Context context, ApiCallBack callBack, Workflow workflow) {
+    public RegistrationOperationResult resumeRegisterAppWithGoogle(Context context, ApiCallBack callBack, Workflow parentWorkflow) {
 
-        if(workflow == null) {
+        Workflow authWorkflow;
+        if(parentWorkflow == null) {
             WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
-            workflow = workflowDao.find(WF_REGISTER_APP_GOOGLE);
+            authWorkflow = workflowDao.find(WF_REGISTER_APP_GOOGLE);
+        } else {
+            authWorkflow = parentWorkflow.findChildWorkflow(WF_REGISTER_APP_GOOGLE);
+            if(authWorkflow == null) {
+                authWorkflow = new Workflow(WF_REGISTER_APP_GOOGLE);
+                parentWorkflow.addChildWorkflow(authWorkflow);
+            }
         }
 
-        RegisterAppWithGoogleParams params = apiObjectFactory.getGson().fromJson(workflow.clob, RegisterAppWithGoogleParams.class);
+        RegisterAppWithGoogleParams params = apiObjectFactory.getGson().fromJson(authWorkflow.clob, RegisterAppWithGoogleParams.class);
         LogContext logContext = new LogContext(LJ_AUTH, LT_REG_APP_GOOGLE);
-        OperationContext opContext = new OperationContext(context, logContext, callBack, true, workflow);
+        OperationContext opContext = new OperationContext(context, logContext, callBack, true, authWorkflow);
 
         if(callBack == null) {
-            return execRegisterAppWithGoogle(opContext, params);
+            RegistrationOperationResult result = execRegisterAppWithGoogle(opContext, params);
+            result.workflow = authWorkflow;
+            return result;
         } else {
             RegisterAppWithGoogleTask registerAppTask = new RegisterAppWithGoogleTask(opContext, params);
             registerAppTask.execute();
@@ -331,8 +395,10 @@ public class DefaultAuthFacade implements AuthFacade {
                 workflow.state = RegisterUserState.INVOKED_EVENT_HANDLERS;
             }
 
+            result.success = true;
 
         } catch (Exception e) {
+            result.success = false;
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
             opContext.logContext.addLog(BalloLog.LVL_ERROR, errMsg);
             Log.e(getClass().getSimpleName(), errMsg);
@@ -380,7 +446,10 @@ public class DefaultAuthFacade implements AuthFacade {
                 workflow.state = RegisterAppState.INVOKED_EVENT_HANDLERS;
             }
 
+            result.success = true;
+
         } catch (Exception e) {
+            result.success = false;
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
             opContext.logContext.addLog(BalloLog.LVL_ERROR, errMsg);
             Log.e(getClass().getSimpleName(), errMsg);
@@ -427,7 +496,10 @@ public class DefaultAuthFacade implements AuthFacade {
                 }
                 workflow.state = RegisterAppFacebookState.INVOKED_EVENT_HANDLERS;
             }
+
+            result.success = true;
         } catch (Exception e) {
+            result.success = false;
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
             opContext.logContext.addLog(BalloLog.LVL_ERROR, errMsg);
             Log.e(getClass().getSimpleName(), errMsg);
@@ -474,7 +546,10 @@ public class DefaultAuthFacade implements AuthFacade {
                 }
                 workflow.state = RegisterAppGoogleState.INVOKED_EVENT_HANDLERS;
             }
+
+            result.success = true;
         } catch (Exception e) {
+            result.success = false;
             String errMsg = e.getMessage() == null?e.getClass().getSimpleName():e.getMessage();
             opContext.logContext.addLog(BalloLog.LVL_ERROR, errMsg);
             Log.e(getClass().getSimpleName(), errMsg);
@@ -555,7 +630,7 @@ public class DefaultAuthFacade implements AuthFacade {
     }
 
     private void saveWorkflow(Workflow workflow) {
-        if(workflow != null) {
+        if(workflow != null && workflow.parentName == null) {
             WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
             workflowDao.save(workflow);
         }

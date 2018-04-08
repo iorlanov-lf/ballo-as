@@ -11,12 +11,18 @@ public class Workflow {
     public String name;
     public Integer state = Integer.MIN_VALUE;
     public String clob;
+    public String parentName;
     List<Workflow> childWorkflows;
 
-    public Workflow(String name, Integer state, String clob) {
+    public Workflow(String name) {
+        this.name = name;
+    }
+
+    public Workflow(String name, Integer state, String clob, String parentName) {
         this.name = name;
         this.state = state;
         this.clob = clob;
+        this.parentName = parentName;
     }
 
     public List<Workflow> getChildWorkflows() {
@@ -28,6 +34,7 @@ public class Workflow {
             childWorkflows = new ArrayList<>();
         }
 
+        workflow.parentName = this.name;
         childWorkflows.add(workflow);
     }
 
@@ -38,6 +45,11 @@ public class Workflow {
             for(Workflow workflow : childWorkflows) {
                 if(workflow.name.equals(name)) {
                     return workflow;
+                } else {
+                    Workflow decendentWorkflow = workflow.findChildWorkflow(name);
+                    if(decendentWorkflow != null) {
+                        return decendentWorkflow;
+                    }
                 }
             }
         }

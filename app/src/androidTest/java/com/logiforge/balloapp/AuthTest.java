@@ -23,10 +23,12 @@ import com.logiforge.ballo.net.PostRequest;
 import com.logiforge.ballo.net.Response;
 import com.logiforge.ballo.sync.dao.AppSubscriptionDao;
 import com.logiforge.ballo.sync.facade.SyncAuthEventHandler;
+import com.logiforge.ballo.sync.facade.SyncFacade;
 import com.logiforge.ballo.sync.model.db.AppSubscription;
 import com.logiforge.balloapp.dao.PostalCodeDao;
 import com.logiforge.balloapp.dao.PostalCodesDao;
 import com.logiforge.balloapp.model.db.PostalCode;
+import com.logiforge.balloapp.model.db.PostalCodeFacilities;
 import com.logiforge.balloapp.model.db.PostalCodes;
 
 import org.junit.Assert;
@@ -123,30 +125,45 @@ public class AuthTest {
 
     @Test
     public void registerUserAndApp() throws Exception {
+        final String WF_BALLOAPP_REGISTER_USER = "BalloApp.RegisterUser";
+        final int WFS_REGISTERED_USER = 10;
+
         deleteUser("iorlanov");
 
-        RegistrationOperationResult result = Ballo.authFacade().registerUser(appContext, null, registerIorlanovParams);
+        WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
+        workflowDao.deleteAll();
+
+        Workflow appWorkflow = new Workflow(WF_BALLOAPP_REGISTER_USER, null, null, null);
+
+        RegistrationOperationResult result = Ballo.authFacade().registerUser(
+                appContext, null, registerIorlanovParams, appWorkflow);
 
         assertNotNull(result);
         assertNotNull(result.authResult);
         assertTrue(result.authResult.success);
-
         assertNotNull(result.workflow);
+        assertTrue(result.success);
 
-        WorkflowDao workflowDao = Ballo.db().getDao(WorkflowDao.class);
-        Workflow persistedWorkflow = workflowDao.find(AuthFacade.WF_REGISTER_USER);
-        assertNotNull(persistedWorkflow);
-        assertEquals(result.workflow.state, persistedWorkflow.state);
-        assertEquals(result.workflow.state, (Integer) DefaultAuthFacade.RegisterUserState.INVOKED_EVENT_HANDLERS);
+        appWorkflow.state = WFS_REGISTERED_USER;
+        workflowDao.save(appWorkflow);
 
-        Workflow transientSyncOnRegUserWorkflow = result.workflow.findChildWorkflow(SyncAuthEventHandler.WF_ON_REGISTER_USER);
+        // auth wflow
+        Workflow transientRegUserWorkflow = appWorkflow.findChildWorkflow(AuthFacade.WF_REGISTER_USER);
+        assertNotNull(transientRegUserWorkflow);
+        Workflow persistedRegUserWorkflow = workflowDao.find(AuthFacade.WF_REGISTER_USER);
+        assertNotNull(persistedRegUserWorkflow);
+        assertEquals(transientRegUserWorkflow.state, persistedRegUserWorkflow.state);
+        assertEquals(transientRegUserWorkflow.state, (Integer) DefaultAuthFacade.RegisterUserState.INVOKED_EVENT_HANDLERS);
+
+        // sync event handler wflow
+        Workflow transientSyncOnRegUserWorkflow = appWorkflow.findChildWorkflow(SyncAuthEventHandler.WF_ON_REGISTER_USER);
         assertNotNull(transientSyncOnRegUserWorkflow);
         Workflow persistentSyncOnRegUserWorkflow = workflowDao.find(SyncAuthEventHandler.WF_ON_REGISTER_USER);
         assertNotNull(persistentSyncOnRegUserWorkflow);
         assertEquals(transientSyncOnRegUserWorkflow.state, persistentSyncOnRegUserWorkflow.state);
         assertEquals(transientSyncOnRegUserWorkflow.state, (Integer) SyncAuthEventHandler.OnRegisterUserState.GOT_SUBSCRIPTION_DATA);
 
-
+        // database
         AppSubscriptionDao appSubscriptionDao = Ballo.db().getDao(AppSubscription.class);
         List<AppSubscription> subscriptions = appSubscriptionDao.getAllSubscriptions();
         assertEquals(1, subscriptions.size());
@@ -155,8 +172,13 @@ public class AuthTest {
         assertEquals(1, postalCodesDao.count());
 
         PostalCodeDao postalCodeDao = new PostalCodeDao();
-        //assertTrue(postalCodeDao.count() > 0);
         assertEquals(42613, postalCodeDao.count());
+
+
+
+        //SyncFacade syncFacade = Ballo.syncFacade().subscribe(PostalCodeFacilities.class.getSimpleName(), "30092");
+
+
     }
 
     @Test

@@ -1,15 +1,11 @@
 package com.logiforge.ballo.sync.facade;
 
-import android.content.Context;
-
 import com.logiforge.ballo.Ballo;
 import com.logiforge.ballo.auth.facade.AuthEventHandler;
-import com.logiforge.ballo.auth.facade.AuthFacade;
 import com.logiforge.ballo.auth.facade.OperationContext;
 import com.logiforge.ballo.auth.model.db.AppIdentity;
 import com.logiforge.ballo.dao.WorkflowDao;
 import com.logiforge.ballo.model.db.Workflow;
-import com.logiforge.ballo.sync.dao.AppSubscriptionDao;
 import com.logiforge.ballo.sync.model.db.AppSubscription;
 
 import java.util.List;
@@ -50,7 +46,7 @@ public class SyncAuthEventHandler implements AuthEventHandler {
                 workflow = workflowDao.find(WF_ON_REGISTER_USER);
             }
         } else {
-            workflow = new Workflow(WF_ON_REGISTER_USER, null, null);
+            workflow = new Workflow(WF_ON_REGISTER_USER);
             opContext.workflow.addChildWorkflow(workflow);
         }
 
@@ -80,7 +76,7 @@ public class SyncAuthEventHandler implements AuthEventHandler {
                 workflow = workflowDao.find(WF_ON_REGISTER_APP);
             }
         } else {
-            workflow = new Workflow(WF_ON_REGISTER_APP, null, null);
+            workflow = new Workflow(WF_ON_REGISTER_APP);
             opContext.workflow.addChildWorkflow(workflow);
         }
 
@@ -95,6 +91,9 @@ public class SyncAuthEventHandler implements AuthEventHandler {
             workflow.state = OnRegisterAppState.GOT_REMOTE_SUBSCRIPTIONS;
         }
 
-
+        if(!workflow.skipStep(opContext.resume, OnRegisterAppState.GOT_SUBSCRIPTION_DATA)) {
+            syncFacade.downloadSubscriptionData(opContext.context, opContext.logContext);
+            workflow.state = OnRegisterAppState.GOT_SUBSCRIPTION_DATA;
+        }
     }
 }

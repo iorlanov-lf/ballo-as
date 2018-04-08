@@ -16,25 +16,33 @@ import com.logiforge.ballo.net.PostRequest;
  */
 
 public interface AuthFacade {
-    String WF_REGISTER_USER = "RegisterUser";
-    String WF_REGISTER_APP = "RegisterApp";
-    String WF_REGISTER_APP_FACEBOOK = "RegisterAppFacebook";
-    String WF_REGISTER_APP_GOOGLE = "RegisterAppGoogle";
+    String WF_REGISTER_USER = "AuthFacade.RegisterUser";
+    String WF_REGISTER_APP = "AuthFacade.RegisterApp";
+    String WF_REGISTER_APP_FACEBOOK = "AuthFacade.RegisterAppFacebook";
+    String WF_REGISTER_APP_GOOGLE = "AuthFacade.RegisterAppGoogle";
 
     void init() throws Exception;
     String getAppId();
 
-    RegistrationOperationResult registerUser(Context context, ApiCallBack callBack, RegisterUserParams registerUserParams) throws Exception;
-    RegistrationOperationResult resumeRegisterUser(Context context, ApiCallBack callBack, Workflow workflow) throws Exception;
+    RegistrationOperationResult registerUser(
+            Context context, ApiCallBack callBack, RegisterUserParams registerUserParams, Workflow parentWorkflow) throws Exception;
+    RegistrationOperationResult resumeRegisterUser(
+            Context context, ApiCallBack callBack, Workflow parentWorkflow) throws Exception;
 
-    RegistrationOperationResult registerApp(Context context, ApiCallBack callBack, RegisterAppParams registerAppParams) throws Exception;
-    RegistrationOperationResult resumeRegisterApp(Context context, ApiCallBack callBack, Workflow workflow) throws Exception;
+    RegistrationOperationResult registerApp(
+            Context context, ApiCallBack callBack, RegisterAppParams registerAppParams, Workflow parentWorkflow) throws Exception;
+    RegistrationOperationResult resumeRegisterApp(
+            Context context, ApiCallBack callBack, Workflow parentWorkflow) throws Exception;
 
-    RegistrationOperationResult registerAppWithFacebook(Context context, ApiCallBack callBack, RegisterAppWithFacebookParams params) throws Exception;
-    RegistrationOperationResult resumeRegisterAppWithFacebook(Context context, ApiCallBack callBack, Workflow workflow) throws Exception;
+    RegistrationOperationResult registerAppWithFacebook(
+            Context context, ApiCallBack callBack, RegisterAppWithFacebookParams params, Workflow parentWorkflow) throws Exception;
+    RegistrationOperationResult resumeRegisterAppWithFacebook(
+            Context context, ApiCallBack callBack, Workflow parentWorkflow) throws Exception;
 
-    RegistrationOperationResult registerAppWithGoogle(Context context, ApiCallBack callBack, RegisterAppWithGoogleParams params) throws Exception;
-    RegistrationOperationResult resumeRegisterAppWithGoogle(Context context, ApiCallBack callBack, Workflow workflow) throws Exception;
+    RegistrationOperationResult registerAppWithGoogle(
+            Context context, ApiCallBack callBack, RegisterAppWithGoogleParams params, Workflow parentWorkflow) throws Exception;
+    RegistrationOperationResult resumeRegisterAppWithGoogle(
+            Context context, ApiCallBack callBack, Workflow parentWorkflow) throws Exception;
 
     void registerEventHandler(AuthEventHandler authEventHandler);
 

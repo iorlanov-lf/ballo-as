@@ -12,6 +12,7 @@ public class RegistrationOperationResult {
     public String playServicesAvailabilityErrorString = null;
     public UserAuthResult authResult = null;
     public Workflow workflow;
+    public boolean success = false;
 
     public boolean isUserAuthenticated() {
         return authResult != null &&

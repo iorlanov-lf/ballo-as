@@ -52,23 +52,17 @@ public class SqliteWorkflowDao extends SqliteDao implements WorkflowDao {
 
     @Override
 	public void save(Workflow workflow) {
-	    db.delete(TABLE_NAME, COL_NAME + "=? or " + COL_PARENT_NAME + "=?", new String[]{workflow.name, workflow.name});
+	    db.delete(TABLE_NAME, COL_NAME + "=?", new String[]{workflow.name});
 
         ContentValues values = new ContentValues();
         values.put(COL_NAME, workflow.name);
         values.put(COL_STATE, workflow.state);
         values.put(COL_CLOB, workflow.clob);
+        values.put(COL_PARENT_NAME, workflow.parentName);
         db.insert(TABLE_NAME, null, values);
 
         if(workflow.getChildWorkflows() != null) {
-            for (Workflow childWorkflow : workflow.getChildWorkflows()) {
-                ContentValues childValues = new ContentValues();
-                childValues.put(COL_NAME, childWorkflow.name);
-                childValues.put(COL_STATE, childWorkflow.state);
-                childValues.put(COL_CLOB, childWorkflow.clob);
-                childValues.put(COL_PARENT_NAME, workflow.name);
-                db.insert(TABLE_NAME, null, childValues);
-            }
+            save(workflow);
         }
     }
 
@@ -84,7 +78,8 @@ public class SqliteWorkflowDao extends SqliteDao implements WorkflowDao {
                 workflow = new Workflow(
                         getString(COL_NAME, c),
                         getInt(COL_STATE, c),
-                        getString(COL_CLOB, c)
+                        getString(COL_CLOB, c),
+                        getString(COL_PARENT_NAME, c)
                 );
             } while (c.moveToNext());
         }
@@ -93,15 +88,12 @@ public class SqliteWorkflowDao extends SqliteDao implements WorkflowDao {
         }
 
         if(workflow != null) {
-            c = db.query(TABLE_NAME, null, COL_PARENT_NAME+"=?", new String[]{name}, null, null, null);
+            c = db.query(TABLE_NAME, new String[]{COL_NAME}, COL_PARENT_NAME+"=?", new String[]{name}, null, null, null);
 
             if (c.moveToFirst()) {
                 do {
-                    Workflow childWorkflow = new Workflow(
-                            getString(COL_NAME, c),
-                            getInt(COL_STATE, c),
-                            getString(COL_CLOB, c)
-                    );
+                    String childName = getString(COL_NAME, c);
+                    Workflow childWorkflow = find(childName);
                     workflow.addChildWorkflow(childWorkflow);
                 } while (c.moveToNext());
             }
