@@ -90,6 +90,14 @@ public abstract class SqliteDao {
         }
     }
 
+    public Integer fromBoolean(Boolean value) {
+        if(value != null) {
+            return value?1:0;
+        } else {
+            return null;
+        }
+    }
+
     public void deleteAll() {
         db.delete(getTableName(), null, null);
     }

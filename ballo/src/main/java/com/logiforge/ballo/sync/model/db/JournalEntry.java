@@ -1,5 +1,7 @@
 package com.logiforge.ballo.sync.model.db;
 
+import com.logiforge.ballo.sync.model.api.EntityChanges;
+
 import java.util.ArrayList;
 
 public class JournalEntry {
@@ -13,8 +15,6 @@ public class JournalEntry {
 	public String parentClassName;
 	public String parentId;
 	public Long parentVersion;
-	public String imagesToDelete;
-	public String imagesToAdd;
 	public String clobData;
 	public byte[] blobData;
 	public ArrayList<Long> absorbedEntries = new ArrayList<Long>();
@@ -78,14 +78,41 @@ public class JournalEntry {
 	}
 	
 	public void absorb(JournalEntry thatEntry) {
-		if(thatEntry.imagesToDelete != null && this.imagesToDelete == null) {
-			this.imagesToDelete = thatEntry.imagesToDelete;
-		}
-		if(thatEntry.imagesToAdd != null) {
-			this.imagesToAdd = thatEntry.imagesToAdd;
-		}
-		
+		absorbedEntries.add(thatEntry.id);
 		absorbedEntries.addAll(thatEntry.absorbedEntries);
+	}
+
+	public boolean isParentOf(JournalEntry thatEntry) {
+		return thatEntry.parentId != null && this.entityId.equals(thatEntry.parentId);
+	}
+
+    public boolean isChildOf(JournalEntry thatEntry) {
+        return this.parentId != null && this.parentId.equals(thatEntry.entityId);
+    }
+
+	public boolean sameAs(JournalEntry thatEntry) {
+		return this.entityId.equals(thatEntry.entityId);
+	}
+
+    public boolean isSiblingOf(JournalEntry thatEntry) {
+        return this.parentId != null && thatEntry.parentId != null
+               && this.parentId.equals(thatEntry.parentId);
+    }
+
+    public boolean isOperationOn(JournalEntry thatEntry) {
+	    return this.entityId.equals(thatEntry.entityId);
+    }
+
+	public boolean isNew() {
+		return this.operation == EntityChanges.OP_NEW;
+	}
+
+	public boolean isDelete() {
+		return this.operation == EntityChanges.OP_DELETE;
+	}
+
+	public boolean isUpdate() {
+		return this.operation == EntityChanges.OP_UPDATE;
 	}
 	
 	public String toConciseString() {
@@ -106,12 +133,7 @@ public class JournalEntry {
 			break;
 		}
 		sb.append(className).append("(").append(entityId.substring(0, 4)).append("/").append(version).append(")").append(" ");
-		if(imagesToAdd != null) {
-			sb.append("+i(").append(imagesToAdd.substring(0,4)).append(")").append(" ");
-		}
-		if(imagesToDelete != null) {
-			sb.append("-i(").append(imagesToDelete.substring(0,4)).append(")").append(" ");
-		}
+
 		if(parentClassName != null) {
 			sb.append(parentClassName).append("(").append(parentId.substring(0, 4)).append("/").append(parentVersion).append(")");
 		}

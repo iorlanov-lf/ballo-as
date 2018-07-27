@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 
-public abstract class SyncEntity {
+public abstract class SyncEntity implements Comparable<SyncEntity>{
 	
 	public String id = null;
 	public Long version = 0L; 
@@ -20,6 +20,19 @@ public abstract class SyncEntity {
 		this.version = version;
 		this.syncState = syncState;
 	}
+
+	@Override
+	public int compareTo(SyncEntity otherEntity) {
+        if(id == null && otherEntity.id == null) {
+            return 0;
+        } else if(id == null && otherEntity.id != null) {
+            return 1;
+        } else if(id != null && otherEntity.id == null) {
+            return -1;
+        } else {
+            return id.compareTo(otherEntity.id);
+        }
+    }
 
     public abstract String getSyncParentId();
     public abstract void applyChanges(Map<Integer, ValuePair> changes);

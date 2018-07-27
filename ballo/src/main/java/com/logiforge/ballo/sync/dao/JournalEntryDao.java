@@ -44,4 +44,8 @@ public interface JournalEntryDao extends Dao {
 	void updateVersion(String entityId, Long version);
 	
 	void updateParentVersion(String entityId, Long version);
+
+	void updateTxnId(JournalEntry entry);
+
+    void updateLOBs(JournalEntry entry);
 }

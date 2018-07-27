@@ -7,6 +7,8 @@ import com.logiforge.balloapp.model.db.Facility;
 import com.logiforge.balloapp.model.db.PostalCode;
 import com.logiforge.balloapp.model.db.PostalCodeFacilities;
 import com.logiforge.balloapp.model.db.PostalCodes;
+import com.logiforge.balloapp.model.db.UserPostalCode;
+import com.logiforge.balloapp.model.db.UserPostalCodes;
 
 /**
  * Created by iorlanov on 12/14/17.
@@ -35,5 +37,13 @@ public class BalloAppDbAdapter extends SqliteDbAdapter {
         PostalCodesDao postalCodesDao = new PostalCodesDao();
         postalCodesDao.init();
         syncDaos.put(PostalCodes.class.getSimpleName(), postalCodesDao);
+
+        UserPostalCodeDao userPostalCodeDao = new UserPostalCodeDao();
+        userPostalCodeDao.init();
+        syncDaos.put(UserPostalCode.class.getSimpleName(), userPostalCodeDao);
+
+        UserPostalCodesDao userPostalCodesDao = new UserPostalCodesDao();
+        userPostalCodesDao.init();
+        syncDaos.put(UserPostalCodes.class.getSimpleName(), userPostalCodesDao);
     }
 }

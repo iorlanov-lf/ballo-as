@@ -20,6 +20,7 @@ import com.logiforge.ballo.net.HttpAdaptorBuilder;
 import com.logiforge.ballo.net.okhttp.OkHttpAdaptorBuilder;
 import com.logiforge.ballo.sync.api.SyncApiParams;
 import com.logiforge.ballo.sync.dao.SyncDaoInitializer;
+import com.logiforge.ballo.sync.facade.JournalFacade;
 import com.logiforge.ballo.sync.facade.SyncAuthEventHandler;
 import com.logiforge.ballo.sync.facade.SyncFacade;
 import com.logiforge.ballo.sync.protocol.DefaultSyncProtocol;
@@ -30,14 +31,20 @@ import com.logiforge.balloapp.model.db.Facility;
 import com.logiforge.balloapp.model.db.PostalCode;
 import com.logiforge.balloapp.model.db.PostalCodeFacilities;
 import com.logiforge.balloapp.model.db.PostalCodes;
+import com.logiforge.balloapp.model.db.UserPostalCode;
+import com.logiforge.balloapp.model.db.UserPostalCodes;
 import com.logiforge.balloapp.protocol.conversion.FacilityConverter;
 import com.logiforge.balloapp.protocol.conversion.PostalCodeConverter;
 import com.logiforge.balloapp.protocol.conversion.PostalCodeFacilitiesConverter;
 import com.logiforge.balloapp.protocol.conversion.PostalCodesConverter;
+import com.logiforge.balloapp.protocol.conversion.UserPostalCodeConverter;
+import com.logiforge.balloapp.protocol.conversion.UserPostalCodesConverter;
 import com.logiforge.balloapp.protocol.dao_facade.FacilityDaoFacade;
 import com.logiforge.balloapp.protocol.dao_facade.PostalCodeDaoFacade;
 import com.logiforge.balloapp.protocol.dao_facade.PostalCodeFacilitiesDaoFacade;
 import com.logiforge.balloapp.protocol.dao_facade.PostalCodesDaoFacade;
+import com.logiforge.balloapp.protocol.dao_facade.UserPostalCodeDaoFacade;
+import com.logiforge.balloapp.protocol.dao_facade.UserPostalCodesDaoFacade;
 
 /**
  * Created by iorlanov on 12/13/17.
@@ -105,6 +112,12 @@ public class BalloInitializer {
 
                 ConverterFactory.registerSyncEntityConverter(PostalCodes.class.getSimpleName(), new PostalCodesConverter());
                 this.syncEntityDaoFacades.put(PostalCodes.class.getSimpleName(), new PostalCodesDaoFacade(this));
+
+                ConverterFactory.registerSyncEntityConverter(UserPostalCode.class.getSimpleName(), new UserPostalCodeConverter());
+                this.syncEntityDaoFacades.put(UserPostalCode.class.getSimpleName(), new UserPostalCodeDaoFacade(this));
+
+                ConverterFactory.registerSyncEntityConverter(UserPostalCodes.class.getSimpleName(), new UserPostalCodesConverter());
+                this.syncEntityDaoFacades.put(UserPostalCodes.class.getSimpleName(), new UserPostalCodesDaoFacade(this));
             }
         };
 
@@ -115,7 +128,8 @@ public class BalloInitializer {
             }
         };
 
-        SyncFacade syncFacade = new SyncFacade(syncDaoInitializer, syncProtocol, syncApiParams, apiObjFactory);
+        JournalFacade journalFacade = new JournalFacade();
+        SyncFacade syncFacade = new SyncFacade(syncDaoInitializer, syncProtocol, syncApiParams, apiObjFactory, journalFacade);
 
         authFacade.registerEventHandler(new SyncAuthEventHandler(syncFacade));
 

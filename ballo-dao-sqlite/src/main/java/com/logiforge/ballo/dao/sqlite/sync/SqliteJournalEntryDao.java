@@ -261,6 +261,21 @@ public class SqliteJournalEntryDao extends SqliteDao implements JournalEntryDao 
 		db.update(TABLE_NAME, values, COL_PARENT_ID + "= ?", new String[]{entityId});
 	}
 
+	@Override
+	public void updateTxnId(JournalEntry entry) {
+		ContentValues values = new ContentValues();
+		values.put(COL_TXN_ID, entry.txnId);
+		db.update(TABLE_NAME, values, COL_ID + "= ?", new String[]{entry.id.toString()});
+	}
+
+    @Override
+    public void updateLOBs(JournalEntry entry) {
+        ContentValues values = new ContentValues();
+        values.put(COL_CLOB_DATA, entry.clobData);
+        values.put(COL_BLOB_DATA, entry.blobData);
+        db.update(TABLE_NAME, values, COL_ID + "= ?", new String[]{entry.id.toString()});
+    }
+
 	private void add(JournalEntry e) {
 		ContentValues values = new ContentValues();
 		values.put(COL_TXN_ID, e.txnId);

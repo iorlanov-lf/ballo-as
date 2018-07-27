@@ -13,12 +13,12 @@ import com.logiforge.ballo.sync.api.SyncApiParams;
 import com.logiforge.ballo.sync.dao.AppSubscriptionDao;
 import com.logiforge.ballo.sync.dao.JournalEntryDao;
 import com.logiforge.ballo.sync.dao.SyncDaoInitializer;
-import com.logiforge.ballo.sync.dao.SyncEntityDao;
 import com.logiforge.ballo.sync.model.api.AuthenticatedCallResponse;
 import com.logiforge.ballo.sync.model.api.DataSlice;
 import com.logiforge.ballo.sync.model.api.SubscriptionRequest;
 import com.logiforge.ballo.sync.model.db.AppSubscription;
 import com.logiforge.ballo.sync.model.db.JournalEntry;
+import com.logiforge.ballo.sync.model.db.JournalTransaction;
 import com.logiforge.ballo.sync.model.db.SyncEntity;
 import com.logiforge.ballo.sync.protocol.SyncProtocol;
 import com.logiforge.ballo.sync.protocol.dao_facade.SyncEntityDaoFacade;
@@ -37,12 +37,16 @@ public class SyncFacade {
     protected SyncProtocol syncProtocol;
     protected SyncApiParams syncApiParams;
     protected ApiObjectFactory apiObjectFactory;
+    protected JournalFacade journalFacade;
 
-    public SyncFacade(SyncDaoInitializer syncDaoInitializer, SyncProtocol syncProtocol, SyncApiParams syncApiParams, ApiObjectFactory apiObjectFactory) {
+    public SyncFacade(
+            SyncDaoInitializer syncDaoInitializer, SyncProtocol syncProtocol, SyncApiParams syncApiParams, ApiObjectFactory apiObjectFactory,
+            JournalFacade journalFacade) {
         this.syncDaoInitializer = syncDaoInitializer;
         this.syncProtocol = syncProtocol;
         this.syncApiParams = syncApiParams;
         this.apiObjectFactory = apiObjectFactory;
+        this.journalFacade = journalFacade;
     }
 
     public void init() throws Exception {
@@ -99,7 +103,7 @@ public class SyncFacade {
         }
     }
 
-    public void downloadSubscriptionData(Context context, LogContext logContext) throws Exception {
+    public boolean downloadSubscriptionData(Context context, LogContext logContext) throws Exception {
         SyncApi syncApi = new SyncApi(context, logContext, apiObjectFactory, syncApiParams);
 
         AppSubscriptionDao appSubscriptionDao = Ballo.db().getDao(AppSubscription.class);
@@ -127,10 +131,21 @@ public class SyncFacade {
                 appSubscriptionDao.updateVisibleVersion(appSubscription.entityId, dataSlice.rootEntity.version);
             }
             db().commitTxn(txn);
+            return true;
         } catch (Exception e) {
             logContext.addLog(BalloLog.LVL_ERROR, e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+            return false;
         } finally {
             db().endTxn(txn);
         }
+    }
+
+    public boolean synchronize() {
+
+        // 2. read and aggregate local changes
+        JournalFacade journalFacade = new JournalFacade();
+        List<JournalTransaction> journalTransactions = journalFacade.getJournalTransactions();
+
+        return true;
     }
 }
